@@ -1,3 +1,4 @@
+# Retrigger deployment after GitHub Pages activation
 name: Deploy Auto 3D to GitHub Pages
 
 on:

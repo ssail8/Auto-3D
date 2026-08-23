@@ -80,6 +80,11 @@ let cameraMode = 0;
 let airTime = 0;
 let started = false;
 let lastVelocity = car.chassisBody.velocity.clone();
+let cameraOrbitYaw = 0;
+let cameraOrbitPitch = 0.18;
+let cameraDragId = null;
+let cameraDragX = 0;
+let cameraDragY = 0;
 
 function setKey(code, down) {
   if (down) keys.add(code);
@@ -94,7 +99,10 @@ window.addEventListener('keydown', (e) => {
   setKey(e.code, true);
 });
 window.addEventListener('keyup', (e) => setKey(e.code, false));
-window.addEventListener('blur', () => keys.clear());
+window.addEventListener('blur', () => {
+  keys.clear();
+  cameraDragId = null;
+});
 
 for (const button of document.querySelectorAll('[data-key]')) {
   const code = button.dataset.key;
@@ -110,6 +118,40 @@ for (const button of document.querySelectorAll('[data-key]')) {
   button.addEventListener('pointercancel', up);
   button.addEventListener('lostpointercapture', up);
 }
+
+canvas.addEventListener('pointerdown', (e) => {
+  if (!started) return;
+  cameraDragId = e.pointerId;
+  cameraDragX = e.clientX;
+  cameraDragY = e.clientY;
+  canvas.setPointerCapture?.(e.pointerId);
+  e.preventDefault();
+});
+
+canvas.addEventListener('pointermove', (e) => {
+  if (!started || e.pointerId !== cameraDragId) return;
+  const dx = e.clientX - cameraDragX;
+  const dy = e.clientY - cameraDragY;
+  cameraDragX = e.clientX;
+  cameraDragY = e.clientY;
+
+  const yawSensitivity = e.pointerType === 'touch' ? 0.0062 : 0.0048;
+  const pitchSensitivity = e.pointerType === 'touch' ? 0.0050 : 0.0038;
+  cameraOrbitYaw -= dx * yawSensitivity;
+  cameraOrbitPitch = clamp(cameraOrbitPitch - dy * pitchSensitivity, -0.18, 0.78);
+  e.preventDefault();
+});
+
+function endCameraDrag(e) {
+  if (e.pointerId !== cameraDragId) return;
+  cameraDragId = null;
+  try { canvas.releasePointerCapture?.(e.pointerId); } catch {}
+  e.preventDefault();
+}
+
+canvas.addEventListener('pointerup', endCameraDrag);
+canvas.addEventListener('pointercancel', endCameraDrag);
+canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function inputState() {
   if (!started) {
@@ -141,6 +183,8 @@ function resetSimulation() {
 function startGame() {
   started = true;
   keys.clear();
+  cameraOrbitYaw = 0;
+  cameraOrbitPitch = 0.18;
   resetSimulation();
   startScreen.classList.add('hidden');
 }
@@ -156,6 +200,7 @@ const bodyQ = new THREE.Quaternion();
 const bodyP = new THREE.Vector3();
 const forward3 = new THREE.Vector3();
 const right3 = new THREE.Vector3();
+const orbitDirection = new THREE.Vector3();
 let cameraInitialized = false;
 
 function syncBodyBasis() {
@@ -170,10 +215,34 @@ function localPoint(x, y, z) {
   return new THREE.Vector3(x, y, z).applyQuaternion(bodyQ).add(bodyP);
 }
 
+function setOrbitCamera(flatForward, flatRight, distance, baseHeight, yawOffset = 0) {
+  const yaw = cameraOrbitYaw + yawOffset;
+  const horizontalDistance = Math.max(2.5, Math.cos(cameraOrbitPitch) * distance);
+  orbitDirection
+    .copy(flatForward)
+    .multiplyScalar(-Math.cos(yaw))
+    .addScaledVector(flatRight, Math.sin(yaw))
+    .normalize();
+
+  cameraDesired.copy(bodyP).addScaledVector(orbitDirection, horizontalDistance);
+  cameraDesired.y += baseHeight + Math.sin(cameraOrbitPitch) * distance;
+  cameraTargetDesired.copy(bodyP).addScaledVector(flatForward, 0.8);
+  cameraTargetDesired.y += 0.95;
+}
+
 function updateCamera(dt) {
   syncBodyBasis();
   const speed = car.chassisBody.velocity.length();
   const shake = car.consumeCameraShake(dt);
+
+  const flatForward = forward3.clone();
+  flatForward.y = 0;
+  if (flatForward.lengthSq() < 0.001) flatForward.set(0, 0, -1);
+  flatForward.normalize();
+  const flatRight = right3.clone();
+  flatRight.y = 0;
+  if (flatRight.lengthSq() < 0.001) flatRight.set(1, 0, 0);
+  flatRight.normalize();
 
   if (!started) {
     const orbit = performance.now() * 0.00028;
@@ -185,31 +254,20 @@ function updateCamera(dt) {
     cameraTargetDesired.copy(bodyP);
     cameraTargetDesired.y += 1.2;
   } else if (cameraMode === 0) {
-    const flatForward = forward3.clone();
-    flatForward.y = 0;
-    if (flatForward.lengthSq() < 0.001) flatForward.set(0, 0, -1);
-    flatForward.normalize();
     const distance = 7.2 + Math.min(2.0, speed * 0.035);
-    cameraDesired.copy(bodyP).addScaledVector(flatForward, -distance);
-    cameraDesired.y += 3.0 + Math.min(0.8, speed * 0.012);
-    cameraTargetDesired.copy(bodyP).addScaledVector(flatForward, 5.8);
-    cameraTargetDesired.y += 0.88;
+    setOrbitCamera(flatForward, flatRight, distance, 1.8);
   } else if (cameraMode === 1) {
     cameraDesired.copy(localPoint(0, 1.52, -0.20));
-    cameraTargetDesired.copy(localPoint(0, 1.15, -18));
+    const cosPitch = Math.cos(cameraOrbitPitch * 0.72);
+    const localLook = new THREE.Vector3(
+      Math.sin(cameraOrbitYaw) * cosPitch,
+      Math.sin(cameraOrbitPitch * 0.72),
+      -Math.cos(cameraOrbitYaw) * cosPitch
+    ).applyQuaternion(bodyQ).normalize();
+    cameraTargetDesired.copy(cameraDesired).addScaledVector(localLook, 18);
   } else {
-    const flatForward = forward3.clone();
-    flatForward.y = 0;
-    flatForward.normalize();
-    const flatRight = right3.clone();
-    flatRight.y = 0;
-    flatRight.normalize();
-    cameraDesired.copy(bodyP)
-      .addScaledVector(flatForward, -10.8)
-      .addScaledVector(flatRight, 6.4);
-    cameraDesired.y += 7.8;
-    cameraTargetDesired.copy(bodyP);
-    cameraTargetDesired.y += 0.95;
+    const distance = 12.8 + Math.min(2.5, speed * 0.025);
+    setOrbitCamera(flatForward, flatRight, distance, 3.4, 0.48);
   }
 
   if (shake > 0.001) {

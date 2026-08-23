@@ -10,6 +10,8 @@ const damageEl = document.querySelector('#damage');
 const gforceEl = document.querySelector('#gforce');
 const airEl = document.querySelector('#air');
 const loading = document.querySelector('#loading');
+const startScreen = document.querySelector('#startScreen');
+const startBtn = document.querySelector('#startBtn');
 const resetBtn = document.querySelector('#resetBtn');
 const cameraBtn = document.querySelector('#cameraBtn');
 
@@ -17,8 +19,8 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const lerp = (a, b, t) => a + (b - a) * t;
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x9ecbf0);
-scene.fog = new THREE.Fog(0x9ecbf0, 155, 430);
+scene.background = new THREE.Color(0xa8c97a);
+scene.fog = new THREE.Fog(0xa8c97a, 155, 430);
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance' });
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
@@ -26,11 +28,11 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.02;
 
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 850);
-scene.add(new THREE.HemisphereLight(0xffffff, 0x69795b, 1.85));
-const sun = new THREE.DirectionalLight(0xfff4df, 3.0);
+scene.add(new THREE.HemisphereLight(0xfffffa, 0x60754a, 1.9));
+const sun = new THREE.DirectionalLight(0xfff3d9, 2.9);
 sun.position.set(90, 120, 60);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
@@ -76,6 +78,7 @@ const car = createVehicle({ THREE, CANNON, scene, world, materials, spawn: map.s
 const keys = new Set();
 let cameraMode = 0;
 let airTime = 0;
+let started = false;
 let lastVelocity = car.chassisBody.velocity.clone();
 
 function setKey(code, down) {
@@ -85,6 +88,7 @@ function setKey(code, down) {
 
 window.addEventListener('keydown', (e) => {
   if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space'].includes(e.code)) e.preventDefault();
+  if (!started && e.code !== 'Enter' && e.code !== 'Space') return;
   if (e.code === 'KeyR' && !e.repeat) resetSimulation();
   if (e.code === 'KeyC' && !e.repeat) nextCamera();
   setKey(e.code, true);
@@ -94,7 +98,12 @@ window.addEventListener('blur', () => keys.clear());
 
 for (const button of document.querySelectorAll('[data-key]')) {
   const code = button.dataset.key;
-  const down = (e) => { e.preventDefault(); setKey(code, true); button.setPointerCapture?.(e.pointerId); };
+  const down = (e) => {
+    if (!started) return;
+    e.preventDefault();
+    setKey(code, true);
+    button.setPointerCapture?.(e.pointerId);
+  };
   const up = (e) => { e.preventDefault(); setKey(code, false); };
   button.addEventListener('pointerdown', down);
   button.addEventListener('pointerup', up);
@@ -103,6 +112,9 @@ for (const button of document.querySelectorAll('[data-key]')) {
 }
 
 function inputState() {
+  if (!started) {
+    return { throttle: false, reverse: false, left: false, right: false, brake: false, handbrake: false };
+  }
   return {
     throttle: keys.has('KeyW') || keys.has('ArrowUp'),
     reverse: keys.has('KeyS') || keys.has('ArrowDown'),
@@ -126,6 +138,14 @@ function resetSimulation() {
   cameraInitialized = false;
 }
 
+function startGame() {
+  started = true;
+  keys.clear();
+  resetSimulation();
+  startScreen.classList.add('hidden');
+}
+
+startBtn.addEventListener('click', startGame);
 resetBtn.addEventListener('click', resetSimulation);
 cameraBtn.addEventListener('click', nextCamera);
 
@@ -155,8 +175,16 @@ function updateCamera(dt) {
   const speed = car.chassisBody.velocity.length();
   const shake = car.consumeCameraShake(dt);
 
-  if (cameraMode === 0) {
-    // Chase camera intentionally flattens pitch/roll so jumps do not snap the horizon.
+  if (!started) {
+    const orbit = performance.now() * 0.00028;
+    cameraDesired.set(
+      bodyP.x + Math.cos(orbit) * 8.8,
+      bodyP.y + 3.5,
+      bodyP.z + Math.sin(orbit) * 8.8
+    );
+    cameraTargetDesired.copy(bodyP);
+    cameraTargetDesired.y += 1.2;
+  } else if (cameraMode === 0) {
     const flatForward = forward3.clone();
     flatForward.y = 0;
     if (flatForward.lengthSq() < 0.001) flatForward.set(0, 0, -1);
@@ -165,13 +193,11 @@ function updateCamera(dt) {
     cameraDesired.copy(bodyP).addScaledVector(flatForward, -distance);
     cameraDesired.y += 3.0 + Math.min(0.8, speed * 0.012);
     cameraTargetDesired.copy(bodyP).addScaledVector(flatForward, 5.8);
-    cameraTargetDesired.y += 0.68;
+    cameraTargetDesired.y += 0.88;
   } else if (cameraMode === 1) {
-    // Hood/driver view follows full chassis attitude.
-    cameraDesired.copy(localPoint(0, 0.92, -0.28));
-    cameraTargetDesired.copy(localPoint(0, 0.76, -18));
+    cameraDesired.copy(localPoint(0, 1.52, -0.20));
+    cameraTargetDesired.copy(localPoint(0, 1.15, -18));
   } else {
-    // Stable cinematic quarter view.
     const flatForward = forward3.clone();
     flatForward.y = 0;
     flatForward.normalize();
@@ -183,7 +209,7 @@ function updateCamera(dt) {
       .addScaledVector(flatRight, 6.4);
     cameraDesired.y += 7.8;
     cameraTargetDesired.copy(bodyP);
-    cameraTargetDesired.y += 0.55;
+    cameraTargetDesired.y += 0.95;
   }
 
   if (shake > 0.001) {
@@ -205,7 +231,7 @@ function updateCamera(dt) {
   }
   camera.lookAt(cameraTargetSmooth);
 
-  const targetFov = cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, 9);
+  const targetFov = !started ? 54 : (cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, 9));
   camera.fov = lerp(camera.fov, targetFov, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
@@ -224,15 +250,13 @@ function gearLabel(signedKmh, input) {
 
 function updateHud(dt, driveData, input) {
   const grounded = car.groundedWheelCount();
-  if (grounded === 0) airTime += dt;
-  else airTime = 0;
+  if (grounded === 0 && started) airTime += dt;
+  else if (grounded > 0) airTime = 0;
 
   const v = car.chassisBody.velocity;
   const ax = (v.x - lastVelocity.x) / Math.max(dt, 0.001);
   const ay = (v.y - lastVelocity.y) / Math.max(dt, 0.001);
   const az = (v.z - lastVelocity.z) / Math.max(dt, 0.001);
-  // Proper/felt acceleration: subtract gravity. Resting on the ground reads ~1 g,
-  // while clean free-fall reads ~0 g instead of a misleading 1 g.
   const properX = ax;
   const properY = ay + 9.82;
   const properZ = az;
@@ -259,6 +283,7 @@ resize();
 
 resetSimulation();
 loading.classList.add('hidden');
+startScreen.classList.remove('hidden');
 
 let last = performance.now();
 const mobile = matchMedia('(max-width: 800px)').matches || /Android|iPhone|iPad/i.test(navigator.userAgent);

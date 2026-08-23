@@ -261,14 +261,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
         autoBrake = 32000;
       } else {
         const curve = lerp(1, 0.12, clamp(Math.max(0, signedSpeed) * 3.6 / 195, 0, 1));
-        engineForce = -4500 * curve;
+        // The visual front of the car points toward local -Z. In RaycastVehicle
+        // this requires a positive engine force on the driven rear wheels.
+        engineForce = 4500 * curve;
       }
     } else if (input.reverse) {
       if (signedSpeed > 1.8) {
         autoBrake = 36000;
       } else {
         const reverseCurve = lerp(1, 0.22, clamp(Math.max(0, -signedSpeed) * 3.6 / 58, 0, 1));
-        engineForce = 2400 * reverseCurve;
+        engineForce = -2400 * reverseCurve;
       }
     }
 

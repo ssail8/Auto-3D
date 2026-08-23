@@ -6,16 +6,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const chassisBody = new CANNON.Body({
     mass: 1280,
     material: chassisPhysics,
-    angularDamping: 0.32,
+    angularDamping: 0.55,
     linearDamping: 0.012,
     allowSleep: false
   });
 
-  // Shape is slightly above body origin so the center of mass is lower than
-  // the geometric center of the car. This noticeably improves roll realism.
+  // Keep the center of mass below the geometric center of the body. A lower
+  // mass center makes weight transfer progressive instead of instantly tipping.
   chassisBody.addShape(
     new CANNON.Box(new CANNON.Vec3(0.98, 0.32, 2.08)),
-    new CANNON.Vec3(0, 0.12, 0)
+    new CANNON.Vec3(0, 0.20, 0)
   );
   chassisBody.position.set(spawn.x, spawn.y, spawn.z);
 
@@ -29,24 +29,24 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const wheelBase = {
     radius: 0.39,
     directionLocal: new CANNON.Vec3(0, -1, 0),
-    suspensionStiffness: 38,
-    suspensionRestLength: 0.30,
-    frictionSlip: 5.15,
-    dampingRelaxation: 2.35,
-    dampingCompression: 4.35,
-    maxSuspensionForce: 100000,
-    rollInfluence: 0.055,
+    suspensionStiffness: 32,
+    suspensionRestLength: 0.27,
+    frictionSlip: 3.2,
+    dampingRelaxation: 3.6,
+    dampingCompression: 4.8,
+    maxSuspensionForce: 90000,
+    rollInfluence: 0.012,
     axleLocal: new CANNON.Vec3(-1, 0, 0),
-    maxSuspensionTravel: 0.22,
+    maxSuspensionTravel: 0.15,
     customSlidingRotationalSpeed: -30,
     useCustomSlidingRotationalSpeed: true
   };
 
   const wheelPoints = [
-    [-0.86, 0.02, -1.38],
-    [ 0.86, 0.02, -1.38],
-    [-0.86, 0.02,  1.36],
-    [ 0.86, 0.02,  1.36]
+    [-0.90, 0.02, -1.38],
+    [ 0.90, 0.02, -1.38],
+    [-0.90, 0.02,  1.36],
+    [ 0.90, 0.02,  1.36]
   ];
 
   for (const p of wheelPoints) {
@@ -79,7 +79,6 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     return mesh;
   }
 
-  // Subdivided shell is deformed vertex-by-vertex after impacts.
   const shellGeometry = new THREE.BoxGeometry(1.98, 0.48, 4.22, 5, 2, 12);
   const shell = new THREE.Mesh(shellGeometry, paint);
   shell.position.y = 0.10;
@@ -233,9 +232,8 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   });
 
   const forwardLocal = new CANNON.Vec3(0, 0, -1);
-  const upLocal = new CANNON.Vec3(0, 1, 0);
   const forwardWorld = new CANNON.Vec3();
-  const upWorld = new CANNON.Vec3();
+  const aeroForce = new CANNON.Vec3();
 
   function getTelemetry() {
     chassisBody.quaternion.vmult(forwardLocal, forwardWorld);
@@ -247,12 +245,34 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   function updateDrive(dt, input) {
     const { speedKmh, signedSpeed, speed } = getTelemetry();
     const steerInput = (input.left ? 1 : 0) - (input.right ? 1 : 0);
-    const steerMax = lerp(0.50, 0.15, clamp(speedKmh / 155, 0, 1));
+
+    // A real car has much less usable steering angle as speed rises. The old
+    // tune still allowed ~22 degrees around 50 km/h, enough to trip the tires
+    // and roll the chassis. This curve progressively trades steering for stability.
+    let steerMax;
+    if (speedKmh < 35) {
+      steerMax = lerp(0.46, 0.32, speedKmh / 35);
+    } else if (speedKmh < 80) {
+      steerMax = lerp(0.32, 0.18, (speedKmh - 35) / 45);
+    } else {
+      steerMax = lerp(0.18, 0.095, clamp((speedKmh - 80) / 100, 0, 1));
+    }
     const steerTarget = steerInput * steerMax;
-    const steerRate = 1 - Math.pow(0.00008, dt);
+    const steerResponse = lerp(7.5, 3.2, clamp(speedKmh / 160, 0, 1));
+    const steerRate = 1 - Math.exp(-steerResponse * dt);
     steerState = lerp(steerState, steerTarget, steerRate);
     vehicle.setSteeringValue(steerState, 0);
     vehicle.setSteeringValue(steerState, 1);
+
+    // High-speed tire grip is reduced slightly so an abrupt turn produces
+    // progressive understeer/slip instead of enough lateral force to flip the car.
+    const gripFade = clamp(speedKmh / 180, 0, 1);
+    const frontGrip = lerp(3.55, 2.30, gripFade);
+    const rearGrip = lerp(3.85, 2.65, gripFade);
+    vehicle.wheelInfos[0].frictionSlip = frontGrip;
+    vehicle.wheelInfos[1].frictionSlip = frontGrip;
+    vehicle.wheelInfos[2].frictionSlip = rearGrip;
+    vehicle.wheelInfos[3].frictionSlip = rearGrip;
 
     let engineForce = 0;
     let autoBrake = 0;
@@ -261,8 +281,6 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
         autoBrake = 32000;
       } else {
         const curve = lerp(1, 0.12, clamp(Math.max(0, signedSpeed) * 3.6 / 195, 0, 1));
-        // The visual front of the car points toward local -Z. In RaycastVehicle
-        // this requires a positive engine force on the driven rear wheels.
         engineForce = 4500 * curve;
       }
     } else if (input.reverse) {
@@ -289,8 +307,9 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       vehicle.setBrake(60000, 3);
     }
 
-    // Aerodynamic drag follows velocity. Downforce follows the car's local down
-    // direction and is disabled when substantially inverted.
+    // Drag opposes motion. Downforce is deliberately world-down while at least
+    // two tires are on the ground; this prevents suspension oscillation from
+    // turning aerodynamic load into a sideways or lifting force during body roll.
     if (speed > 0.3) {
       const dragMag = Math.min(9000, 0.5 * 1.225 * 0.72 * speed * speed);
       const drag = chassisBody.velocity.clone();
@@ -298,12 +317,20 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       drag.scale(-dragMag, drag);
       chassisBody.applyForce(drag, chassisBody.position);
 
-      chassisBody.quaternion.vmult(upLocal, upWorld);
-      if (upWorld.y > 0.25) {
-        const downforceMag = Math.min(7200, speed * speed * 1.9);
-        const down = upWorld.clone();
-        down.scale(-downforceMag, down);
-        chassisBody.applyForce(down, chassisBody.position);
+      let contacts = 0;
+      for (const info of vehicle.wheelInfos) if (info.isInContact) contacts++;
+      if (contacts >= 2 && speed > 4) {
+        const downforceMag = Math.min(9500, speed * speed * 4.2);
+        aeroForce.set(0, -downforceMag, 0);
+        chassisBody.applyForce(aeroForce, chassisBody.position);
+
+        // Extra heave damping only counters upward suspension bounce; it does
+        // not glue the car to the road or interfere with genuine ramp launches.
+        if (contacts >= 3 && chassisBody.velocity.y > 0.25) {
+          const heaveDamping = Math.min(6500, (chassisBody.velocity.y - 0.25) * 2400);
+          aeroForce.set(0, -heaveDamping, 0);
+          chassisBody.applyForce(aeroForce, chassisBody.position);
+        }
       }
     }
 
@@ -339,6 +366,7 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       vehicle.wheelInfos[i].rotation = 0;
       vehicle.wheelInfos[i].deltaRotation = 0;
       vehicle.wheelInfos[i].suspensionLength = wheelBase.suspensionRestLength;
+      vehicle.wheelInfos[i].frictionSlip = wheelBase.frictionSlip;
     }
     resetDamage();
     syncVisuals();

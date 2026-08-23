@@ -1,6 +1,7 @@
 export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   const dynamicObjects = [];
   const staticBodies = [];
+  const animatedObjects = [];
   const { asphaltPhysics, concretePhysics, asphaltMat, concreteMat } = materials;
 
   const qFromEuler = (pitch = 0, yaw = 0, roll = 0) =>
@@ -24,9 +25,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     return { mesh, body };
   }
 
-  // A rotated box is used as a ramp collider, but the TOP driving face is
-  // anchored at y≈0 on the low edge. The previous version anchored the bottom
-  // corner instead, leaving a ~0.6 m vertical lip that looked like a floating ramp.
   function addRamp({ x, z, width = 11, length = 22, angle, yaw = 0, thickness = 0.62, color = 0x727982 }) {
     const absSin = Math.abs(Math.sin(angle));
     const absCos = Math.abs(Math.cos(angle));
@@ -35,7 +33,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     const highSurfaceY = surfaceLowY + absSin * length;
     const rampMaterial = new THREE.MeshStandardMaterial({ color, roughness: 0.84, metalness: 0.10 });
     const item = addStaticBox({ x, y, z, w: width, h: thickness, l: length, pitch: angle, yaw, material: rampMaterial });
-    return { ...item, highSurfaceY };
+    return { ...item, highSurfaceY, surfaceLowY };
   }
 
   function addPlatform({ x, z, topY, w, l, h = 0.75, color = 0x646b73 }) {
@@ -47,7 +45,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
 
   function addBump(x, z, radius = 1.15, visibleHeight = 0.38) {
     const centerY = visibleHeight - radius;
-    const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 24, 14), concreteMat);
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 28, 18), concreteMat);
     mesh.position.set(x, centerY, z);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
@@ -128,8 +126,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
 
     const body = new CANNON.Body({ mass: 24, material: concretePhysics });
     const cylinder = new CANNON.Cylinder(radius, radius, height, 18);
-    // cannon-es cylinders are created on the Z axis; rotate the collision shape
-    // to match Three.js' Y-axis cylinder so the barrel no longer collides sideways.
     const shapeQ = new CANNON.Quaternion();
     shapeQ.setFromEuler(Math.PI / 2, 0, 0);
     body.addShape(cylinder, new CANNON.Vec3(), shapeQ);
@@ -148,27 +144,69 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     scene.add(mesh);
   }
 
-  function addLabel(text, x, y, z, scale = 6) {
+  function createTextTexture(text, width = 1024, height = 256, options = {}) {
     const c = document.createElement('canvas');
-    c.width = 512;
-    c.height = 128;
+    c.width = width;
+    c.height = height;
     const ctx = c.getContext('2d');
-    ctx.fillStyle = 'rgba(10,18,28,.86)';
-    ctx.fillRect(0, 12, 512, 104);
-    ctx.strokeStyle = 'rgba(255,255,255,.9)';
-    ctx.lineWidth = 5;
-    ctx.strokeRect(4, 16, 504, 96);
-    ctx.fillStyle = '#fff';
-    ctx.font = '700 44px system-ui';
+    ctx.clearRect(0, 0, width, height);
+    if (options.background !== false) {
+      ctx.fillStyle = options.background || 'rgba(8,14,24,.72)';
+      const pad = 14;
+      const radius = 32;
+      ctx.beginPath();
+      ctx.moveTo(pad + radius, pad);
+      ctx.arcTo(width - pad, pad, width - pad, height - pad, radius);
+      ctx.arcTo(width - pad, height - pad, pad, height - pad, radius);
+      ctx.arcTo(pad, height - pad, pad, pad, radius);
+      ctx.arcTo(pad, pad, width - pad, pad, radius);
+      ctx.closePath();
+      ctx.fill();
+    }
+    if (options.border !== false) {
+      ctx.strokeStyle = options.border || 'rgba(255,255,255,.92)';
+      ctx.lineWidth = options.borderWidth || 8;
+      ctx.strokeRect(18, 18, width - 36, height - 36);
+    }
+    ctx.fillStyle = options.color || '#ffffff';
+    ctx.font = `${options.weight || 800} ${options.fontSize || 84}px system-ui`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText(text, 256, 64);
+    ctx.fillText(text, width / 2, height / 2);
     const texture = new THREE.CanvasTexture(c);
     texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  function addLabel(text, x, y, z, scale = 6) {
+    const texture = createTextTexture(text, 768, 180, { fontSize: 54 });
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true }));
     sprite.position.set(x, y, z);
     sprite.scale.set(scale * 2.8, scale * 0.7, 1);
     scene.add(sprite);
+  }
+
+  function addSkySpinner(text, x, y, z, w = 34, h = 7.6) {
+    const group = new THREE.Group();
+    const texture = createTextTexture(text, 1200, 240, {
+      background: 'rgba(16,24,42,.70)',
+      border: 'rgba(255,247,214,.96)',
+      fontSize: 112,
+      color: '#fff6ca'
+    });
+    const mat = new THREE.MeshBasicMaterial({ map: texture, transparent: true, side: THREE.DoubleSide, depthWrite: false });
+    const plane = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    const planeBack = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
+    planeBack.rotation.y = Math.PI;
+    group.add(plane, planeBack);
+    group.position.set(x, y, z);
+    scene.add(group);
+    animatedObjects.push({
+      update(time) {
+        group.rotation.y = time * 0.00042;
+        group.position.y = y + Math.sin(time * 0.0011) * 1.6;
+      }
+    });
   }
 
   function addTree(x, z, s = 1) {
@@ -188,21 +226,29 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     scene.add(crown);
   }
 
-  // Environment and physical ground.
   const grass = new THREE.Mesh(
-    new THREE.PlaneGeometry(520, 520),
-    new THREE.MeshStandardMaterial({ color: 0x5c9a52, roughness: 1 })
+    new THREE.PlaneGeometry(560, 560),
+    new THREE.MeshStandardMaterial({ color: 0x77ab60, roughness: 1 })
   );
   grass.rotation.x = -Math.PI / 2;
   grass.position.y = -0.04;
   grass.receiveShadow = true;
   scene.add(grass);
 
-  const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(270, 270), asphaltMat);
+  const asphalt = new THREE.Mesh(new THREE.PlaneGeometry(300, 300), asphaltMat);
   asphalt.rotation.x = -Math.PI / 2;
   asphalt.position.y = 0;
   asphalt.receiveShadow = true;
   scene.add(asphalt);
+
+  const shoulder = new THREE.Mesh(
+    new THREE.RingGeometry(152, 176, 56),
+    new THREE.MeshStandardMaterial({ color: 0x89b56a, roughness: 1 })
+  );
+  shoulder.rotation.x = -Math.PI / 2;
+  shoulder.position.y = -0.035;
+  shoulder.receiveShadow = true;
+  scene.add(shoulder);
 
   const groundBody = new CANNON.Body({ mass: 0, material: asphaltPhysics });
   groundBody.addShape(new CANNON.Plane());
@@ -210,89 +256,134 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   world.addBody(groundBody);
   staticBodies.push(groundBody);
 
-  // Outer barrier.
-  addStaticBox({ x: 0, y: 1.1, z: -134, w: 270, h: 2.2, l: 1.2 });
-  addStaticBox({ x: 0, y: 1.1, z: 134, w: 270, h: 2.2, l: 1.2 });
-  addStaticBox({ x: -134, y: 1.1, z: 0, w: 1.2, h: 2.2, l: 270 });
-  addStaticBox({ x: 134, y: 1.1, z: 0, w: 1.2, h: 2.2, l: 270 });
+  addStaticBox({ x: 0, y: 1.25, z: -149, w: 300, h: 2.5, l: 1.2 });
+  addStaticBox({ x: 0, y: 1.25, z: 149, w: 300, h: 2.5, l: 1.2 });
+  addStaticBox({ x: -149, y: 1.25, z: 0, w: 1.2, h: 2.5, l: 300 });
+  addStaticBox({ x: 149, y: 1.25, z: 0, w: 1.2, h: 2.5, l: 300 });
 
-  // Center acceleration lane.
-  addLine(0, 18, 0.16, 206, 0xf5f5f5);
-  for (let z = 106; z > -106; z -= 10) {
-    addLine(-7.5, z, 0.1, 4.5, 0xcbd5e1);
-    addLine(7.5, z, 0.1, 4.5, 0xcbd5e1);
+  addSkySpinner('oda judie', 0, 76, -8, 38, 8.4);
+
+  for (let r = 48; r <= 126; r += 26) {
+    const pts = [];
+    for (let i = 0; i <= 96; i++) {
+      const a = (i / 96) * Math.PI * 2;
+      pts.push(new THREE.Vector3(Math.cos(a) * r, 0.06, Math.sin(a) * r));
+    }
+    const line = new THREE.Line(
+      new THREE.BufferGeometry().setFromPoints(pts),
+      new THREE.LineBasicMaterial({ color: r === 48 ? 0xffffff : 0xd9e3f0, transparent: true, opacity: r === 48 ? 0.34 : 0.16 })
+    );
+    scene.add(line);
   }
 
-  // Main connected jump table. No physical gaps between ramps and platform.
-  const mainUp = addRamp({ x: 0, z: 28, width: 11, length: 23, angle: THREE.MathUtils.degToRad(15), color: 0x69717b });
-  addPlatform({ x: 0, z: 10, topY: mainUp.highSurfaceY, w: 11, l: 13, h: 0.75 });
-  addRamp({ x: 0, z: -8, width: 11, length: 23, angle: THREE.MathUtils.degToRad(-15), color: 0x69717b });
-  addLabel('SALTO PRINCIPAL', 0, 8.2, 16, 5.4);
+  for (let z = 128; z > -136; z -= 10) {
+    addLine(0, z, 0.18, 4.8, 0xffffff);
+  }
+  for (let z = 128; z > -136; z -= 12) {
+    addLine(-8.7, z, 0.1, 4.6, 0xcfd8e3);
+    addLine(8.7, z, 0.1, 4.6, 0xcfd8e3);
+  }
 
-  // Crash corridor.
+  addLabel('RECTA PRINCIPAL', 0, 7, 98, 5.2);
+
+  const mainUp = addRamp({ x: 0, z: 34, width: 12, length: 24, angle: THREE.MathUtils.degToRad(16), color: 0x6a7380 });
+  addPlatform({ x: 0, z: 13, topY: mainUp.highSurfaceY, w: 12, l: 15, h: 0.78, color: 0x5f6772 });
+  addRamp({ x: 0, z: -12, width: 12, length: 24, angle: THREE.MathUtils.degToRad(-14), color: 0x6a7380 });
+  addLabel('SALTO PRINCIPAL', 0, 9.6, 22, 5.5);
+
+  const sideJumpL = addRamp({ x: -40, z: 16, width: 10, length: 18, angle: THREE.MathUtils.degToRad(18), yaw: THREE.MathUtils.degToRad(16), color: 0x6f7782 });
+  addPlatform({ x: -34, z: -2, topY: sideJumpL.highSurfaceY, w: 9, l: 11, h: 0.72, color: 0x666f79 });
+  const sideJumpR = addRamp({ x: 40, z: 16, width: 10, length: 18, angle: THREE.MathUtils.degToRad(18), yaw: THREE.MathUtils.degToRad(-16), color: 0x6f7782 });
+  addPlatform({ x: 34, z: -2, topY: sideJumpR.highSurfaceY, w: 9, l: 11, h: 0.72, color: 0x666f79 });
+  addLabel('RAMPAS LATERALES', 0, 6.5, 3, 5);
+
+  addLabel('SUSPENSIÓN', -54, 6.4, 74, 4.8);
+  for (let i = 0; i < 12; i++) {
+    addBump(-58 + (i % 2) * 7.5, 58 - i * 8.0, 1.25, 0.34 + (i % 3) * 0.09);
+  }
+  for (let i = 0; i < 9; i++) addSpeedBump(-47, -8 - i * 3.1, 10.5, 0.11 + (i % 2) * 0.08, 0.70);
+  addLine(-52, 24, 12, 112, 0xd9dee3);
+
+  addLabel('SLOPE 24°', 53, 8.6, 63, 4.8);
+  const hillUp = addRamp({ x: 52, z: 48, width: 13, length: 28, angle: THREE.MathUtils.degToRad(24), color: 0x646c75 });
+  addPlatform({ x: 52, z: 22, topY: hillUp.highSurfaceY, w: 14, l: 22, h: 0.9, color: 0x5d6670 });
+  addRamp({ x: 52, z: -8, width: 13, length: 28, angle: THREE.MathUtils.degToRad(-24), color: 0x646c75 });
+
+  addLabel('ARTICULACIÓN', 90, 6.2, 66, 4.7);
+  for (let i = 0; i < 7; i++) {
+    const a = i % 2 === 0 ? THREE.MathUtils.degToRad(9) : THREE.MathUtils.degToRad(-9);
+    addRamp({ x: 90, z: 52 - i * 10.3, width: 10, length: 9.8, angle: a, thickness: 0.46, color: 0x757f89 });
+  }
+
+  addLabel('SLALOM', -96, 6.5, -8, 4.6);
+  for (let i = 0; i < 16; i++) {
+    const x = -96 + (i % 2 === 0 ? -5.5 : 5.5);
+    const z = 28 - i * 7;
+    addCone(x, z);
+  }
+  addLine(-96, -26, 14, 118, 0xf8fafc);
+
+  addLabel('PRUEBA DE CHOQUE', 0, 6.2, -112, 5.3);
   addStaticBox({
-    x: 0, y: 1.4, z: -103, w: 22, h: 2.8, l: 2.4,
+    x: 0, y: 1.4, z: -128, w: 28, h: 2.8, l: 2.6,
     material: new THREE.MeshStandardMaterial({ color: 0xb8bec4, roughness: 0.94 })
   });
-  addStaticBox({ x: -11.5, y: 0.7, z: -76, w: 0.5, h: 1.4, l: 54 });
-  addStaticBox({ x: 11.5, y: 0.7, z: -76, w: 0.5, h: 1.4, l: 54 });
-  addLabel('PRUEBA DE CHOQUE', 0, 5.5, -98, 5.2);
+  addStaticBox({ x: -14.5, y: 0.7, z: -102, w: 0.5, h: 1.4, l: 54 });
+  addStaticBox({ x: 14.5, y: 0.7, z: -102, w: 0.5, h: 1.4, l: 54 });
   for (let row = 0; row < 3; row++) {
-    for (let col = -2; col <= 2; col++) {
-      addDynamicBox({ x: col * 1.35, y: 0.60 + row * 1.18, z: -82, size: 1.12, mass: 9.5 });
+    for (let col = -3; col <= 3; col++) {
+      addDynamicBox({ x: col * 1.35, y: 0.62 + row * 1.18, z: -112, size: 1.10, mass: 9.5, color: row === 2 ? 0xc58d46 : 0xb9803f });
     }
   }
 
-  // Suspension lane: alternating domes + speed bumps.
-  addLabel('SUSPENSIÓN', -34, 6, 72, 4.5);
-  for (let i = 0; i < 12; i++) {
-    addBump(-37 + (i % 2) * 5.5, 60 - i * 7.0, 1.22, 0.36 + (i % 3) * 0.08);
-  }
-  for (let i = 0; i < 8; i++) addSpeedBump(-34, -27 - i * 3.2, 7.2, 0.13 + (i % 2) * 0.07, 0.68);
-  addLine(-34, 14, 7.5, 102, 0xd9dee3);
-
-  // Steep grade with exact ramp/platform height matching.
-  addLabel('PENDIENTE 24°', 39, 8.4, 57, 4.6);
-  const hillUp = addRamp({ x: 39, z: 42, width: 11, length: 26, angle: THREE.MathUtils.degToRad(24), color: 0x626b75 });
-  addPlatform({ x: 39, z: 20, topY: hillUp.highSurfaceY, w: 12, l: 18, h: 0.85 });
-  addRamp({ x: 39, z: -2, width: 11, length: 26, angle: THREE.MathUtils.degToRad(-24), color: 0x626b75 });
-
-  // Cross-axle articulation section.
-  addLabel('ARTICULACIÓN', 73, 6, 68, 4.5);
-  for (let i = 0; i < 7; i++) {
-    const a = i % 2 === 0 ? THREE.MathUtils.degToRad(8) : THREE.MathUtils.degToRad(-8);
-    addRamp({ x: 73, z: 52 - i * 10.5, width: 9, length: 10, angle: a, thickness: 0.44, color: 0x707981 });
-  }
-
-  // Slalom and movable props.
-  addLabel('SLALOM', -74, 5.5, 62, 4.3);
-  for (let i = 0; i < 13; i++) addCone(-74 + (i % 2 ? 3.2 : -3.2), 50 - i * 8);
-  addLine(-74, 1, 9, 116, 0xd9dee3);
-
-  addLabel('IMPACTO LATERAL', 78, 5.5, -45, 4.4);
-  for (let i = 0; i < 12; i++) addBarrel(72 + (i % 4) * 2.0, -55 - Math.floor(i / 4) * 2.0);
-  addStaticBox({ x: 91, y: 1.0, z: -59, w: 2.0, h: 2.0, l: 26, yaw: THREE.MathUtils.degToRad(18) });
-
-  // Two standalone launch ramps with flush low edges.
-  addRamp({ x: -69, z: -72, width: 8, length: 13, angle: THREE.MathUtils.degToRad(18), yaw: THREE.MathUtils.degToRad(12), color: 0x59636e });
-  addRamp({ x: 68, z: 91, width: 9, length: 16, angle: THREE.MathUtils.degToRad(20), yaw: THREE.MathUtils.degToRad(-20), color: 0x59636e });
-
-  // Perimeter trees are visual only, deliberately outside the physical barrier.
-  for (let i = 0; i < 58; i++) {
-    const a = (i / 58) * Math.PI * 2;
-    const r = 155 + (i % 4) * 7;
-    addTree(Math.cos(a) * r, Math.sin(a) * r, 0.9 + (i % 3) * 0.12);
-  }
-
-  return {
-    dynamicObjects,
-    staticBodies,
-    spawn: { x: 0, y: 0.82, z: 92 },
-    syncDynamics() {
-      for (const item of dynamicObjects) {
-        item.mesh.position.copy(item.body.position);
-        item.mesh.quaternion.copy(item.body.quaternion);
-      }
+  addLabel('BARRILES', 82, 6.1, -56, 4.4);
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      addBarrel(72 + col * 3.1, -48 - row * 3.1);
     }
-  };
+  }
+
+  addLabel('DROP TEST', -38, 7.8, -58, 4.8);
+  addPlatform({ x: -38, z: -50, topY: 5.2, w: 14, l: 18, h: 5.2, color: 0x6a737c });
+  addRamp({ x: -38, z: -28, width: 11, length: 18, angle: THREE.MathUtils.degToRad(17), color: 0x7b848d });
+  addRamp({ x: -38, z: -70, width: 11, length: 14, angle: THREE.MathUtils.degToRad(-28), color: 0x7b848d });
+
+  addLabel('WALL RIDE', 94, 8.2, 4, 4.8);
+  addStaticBox({
+    x: 112, y: 4.8, z: 4, w: 2.2, h: 9.6, l: 26,
+    pitch: 0,
+    yaw: 0,
+    roll: THREE.MathUtils.degToRad(24),
+    material: new THREE.MeshStandardMaterial({ color: 0x737d86, roughness: 0.88 })
+  });
+  addStaticBox({ x: 98, y: 0.5, z: 4, w: 18, h: 1, l: 32, material: asphaltMat });
+
+  addLabel('MINI JUMPS', -92, 6.3, 92, 4.6);
+  for (let i = 0; i < 4; i++) {
+    addRamp({ x: -92, z: 78 - i * 12, width: 10, length: 8.6, angle: THREE.MathUtils.degToRad(12 + i * 2), thickness: 0.42, color: 0x737d86 });
+  }
+
+  for (let i = 0; i < 32; i++) {
+    const a = (i / 32) * Math.PI * 2;
+    const r = 168 + (i % 3) * 6;
+    addTree(Math.cos(a) * r, Math.sin(a) * r, 0.94 + (i % 5) * 0.05);
+  }
+  for (let i = 0; i < 18; i++) {
+    const a = (i / 18) * Math.PI * 2 + 0.18;
+    const r = 140 + (i % 2) * 9;
+    addTree(Math.cos(a) * r, Math.sin(a) * r, 0.76 + (i % 4) * 0.06);
+  }
+
+  const spawn = { x: 0, y: 1.2, z: 118 };
+
+  function syncDynamics() {
+    for (const { mesh, body } of dynamicObjects) {
+      mesh.position.copy(body.position);
+      mesh.quaternion.copy(body.quaternion);
+    }
+    const time = performance.now();
+    for (const item of animatedObjects) item.update(time);
+  }
+
+  return { spawn, syncDynamics, dynamicObjects, staticBodies };
 }

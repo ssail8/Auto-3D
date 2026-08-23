@@ -1,19 +1,20 @@
 *{box-sizing:border-box}
 :root{color-scheme:dark}
-html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1118;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;background:#0b1118;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 button{font:inherit}
 #game{display:block;width:100%;height:100%;touch-action:none}
-#hud{position:fixed;z-index:10;top:14px;left:14px;display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;max-width:calc(100% - 28px);padding:9px;border-radius:16px;background:rgba(9,15,24,.82);color:#fff;backdrop-filter:blur(12px);box-shadow:0 12px 32px rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08)}
+#hud{position:fixed;z-index:10;top:max(14px,env(safe-area-inset-top));left:max(14px,env(safe-area-inset-left));display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;max-width:calc(100% - 28px);padding:9px;border-radius:16px;background:rgba(9,15,24,.82);color:#fff;backdrop-filter:blur(12px);box-shadow:0 12px 32px rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08)}
 #hud>div,#hud button{min-height:46px;display:flex;flex-direction:column;justify-content:center;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:7px 11px;color:#d8e0ea;font-size:12px}
 #hud>div strong,#hud button{color:#fff;font-size:14px}
 #hud .brand{min-width:118px;background:rgba(137,182,66,.20)}
 #hud .brand strong{font-size:15px}
 #hud .brand span{font-size:10px;color:#d7f0ab;text-transform:uppercase;letter-spacing:.08em}
-#hud button{align-items:center;cursor:pointer;font-weight:800;padding:8px 13px}
+#hud button{align-items:center;cursor:pointer;font-weight:800;padding:8px 13px;touch-action:manipulation}
 #hud button:hover{background:rgba(255,255,255,.11)}
 #damage.danger{color:#ff8f8f}
-#help{position:fixed;z-index:10;left:14px;bottom:14px;max-width:min(760px,calc(100% - 28px));padding:9px 12px;border-radius:11px;background:rgba(9,15,24,.78);color:#e7edf5;font-size:12px;line-height:1.35;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08)}
-#loading,#startScreen{position:fixed;inset:0;display:grid;place-items:center;color:#fff;transition:opacity .3s ease}
+#help{position:fixed;z-index:10;left:max(14px,env(safe-area-inset-left));bottom:max(14px,env(safe-area-inset-bottom));max-width:min(760px,calc(100% - 28px));padding:9px 12px;border-radius:11px;background:rgba(9,15,24,.78);color:#e7edf5;font-size:12px;line-height:1.35;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08);pointer-events:none}
+#loading,#startScreen{position:fixed;inset:0;display:grid;place-items:center;color:#fff;transition:opacity .3s ease;padding:max(16px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(16px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left))}
 #loading{z-index:30;background:radial-gradient(circle at center,#223622,#081018 68%)}
 #loading>div{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 26px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}
 #loading strong{font-size:26px}
@@ -24,11 +25,12 @@ button{font:inherit}
 .startBadge{display:inline-flex;padding:7px 12px;border-radius:999px;background:rgba(145,201,78,.18);border:1px solid rgba(216,255,151,.18);font-size:12px;font-weight:800;color:#d7f0ab;letter-spacing:.08em;text-transform:uppercase}
 .startCard h1{margin:16px 0 10px;font-size:clamp(30px,5vw,46px);line-height:1.02}
 .startCard p{margin:0 auto 20px;max-width:42ch;color:#dbe5ef;line-height:1.55;font-size:15px}
-#startBtn{border:0;border-radius:16px;padding:14px 18px;min-height:52px;font-size:16px;font-weight:900;cursor:pointer;background:linear-gradient(180deg,#c7f06d,#8ec737);color:#132108;box-shadow:0 10px 30px rgba(142,199,55,.25)}
+#startBtn{border:0;border-radius:16px;padding:14px 18px;min-height:52px;font-size:16px;font-weight:900;cursor:pointer;background:linear-gradient(180deg,#c7f06d,#8ec737);color:#132108;box-shadow:0 10px 30px rgba(142,199,55,.25);touch-action:manipulation}
 #startBtn:hover{transform:translateY(-1px)}
-#mobileControls{display:none;position:fixed;z-index:15;left:0;right:0;bottom:16px;padding:0 16px;justify-content:space-between;align-items:flex-end;pointer-events:none}
+#mobileControls{display:none;position:fixed;z-index:15;left:0;right:0;bottom:max(12px,env(safe-area-inset-bottom));padding-left:max(12px,env(safe-area-inset-left));padding-right:max(12px,env(safe-area-inset-right));justify-content:space-between;align-items:flex-end;pointer-events:none}
 .dpad{display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:8px;pointer-events:auto}
-.dpad button,.pedals button{border:1px solid rgba(255,255,255,.28);background:rgba(9,15,24,.8);color:#fff;border-radius:16px;font-size:22px;font-weight:800;backdrop-filter:blur(8px);touch-action:none;min-width:54px;min-height:54px}
+.dpad button,.pedals button{border:1px solid rgba(255,255,255,.28);background:rgba(9,15,24,.80);color:#fff;border-radius:16px;font-size:22px;font-weight:800;backdrop-filter:blur(8px);touch-action:none;min-width:54px;min-height:54px;box-shadow:0 5px 16px rgba(0,0,0,.16)}
+.dpad button:active,.pedals button:active{transform:scale(.96);background:rgba(104,133,46,.88)}
 .dpad button:nth-child(1){grid-column:2}
 .dpad button:nth-child(2){grid-column:1;grid-row:2}
 .dpad button:nth-child(3){grid-column:2;grid-row:2}
@@ -36,10 +38,10 @@ button{font:inherit}
 .pedals{display:flex;gap:9px;pointer-events:auto;align-items:flex-end}
 .pedals .brake{width:78px;height:78px;font-size:13px}
 .pedals .handbrake{width:64px;height:64px;font-size:11px}
-@media(max-width:900px){
+@media(max-width:900px), (pointer:coarse){
   #mobileControls{display:flex}
   #help{bottom:172px;max-width:72%;font-size:11px}
-  #hud{font-size:12px;gap:5px;padding:7px;top:8px;left:8px;max-width:calc(100% - 16px)}
+  #hud{font-size:12px;gap:5px;padding:7px;top:max(8px,env(safe-area-inset-top));left:max(8px,env(safe-area-inset-left));max-width:calc(100% - 16px)}
   #hud>div,#hud button{min-height:41px;padding:5px 8px}
   #hud>div strong,#hud button{font-size:12px}
   #hud .brand{min-width:98px}
@@ -52,4 +54,14 @@ button{font:inherit}
   #help{max-width:64%;bottom:166px}
   .startCard{padding:24px 18px}
   .startCard p{font-size:14px}
+}
+@media(max-height:520px) and (pointer:coarse){
+  #hud>div:nth-of-type(4),#hud>div:nth-of-type(5),#hud>div:nth-of-type(6){display:none}
+  #help{display:none}
+  #hud{max-width:74%;padding:5px}
+  #hud>div,#hud button{min-height:36px;padding:4px 7px}
+  .dpad{grid-template-columns:50px 50px 50px;grid-template-rows:50px 50px;gap:6px}
+  .dpad button,.pedals button{min-width:50px;min-height:50px}
+  .pedals .brake{width:66px;height:66px}
+  .pedals .handbrake{width:56px;height:56px}
 }

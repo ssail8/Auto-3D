@@ -3,29 +3,43 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Auto 3D - Test Map</title>
+  <title>Auto 3D - Proving Ground</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="hud">
-    <div><strong>Auto 3D</strong></div>
-    <div>Velocidad: <span id="speed">0</span> km/h</div>
-    <div>Aire: <span id="air">0.0</span> s</div>
-    <div>Boosts: <span id="boosts">0</span></div>
-    <button id="resetBtn">Reiniciar</button>
+    <div class="brand"><strong>Auto 3D</strong><span>Physics V2</span></div>
+    <div>Velocidad <strong><span id="speed">0</span> km/h</strong></div>
+    <div>Marcha <strong id="gear">N</strong></div>
+    <div>Daño <strong id="damage">0%</strong></div>
+    <div>G <strong id="gforce">0.0 g</strong></div>
+    <div>Aire <strong id="air">0.0 s</strong></div>
+    <button id="cameraBtn" type="button">Cámara 1</button>
+    <button id="resetBtn" type="button">Reiniciar</button>
   </div>
 
-  <div id="help">WASD / flechas = conducir · Espacio = freno · R = reiniciar</div>
-  <div id="loading">Cargando mundo 3D…</div>
+  <div id="help">
+    W/↑ acelerar · S/↓ reversa · A/D girar · Espacio freno · Shift freno de mano · C cámara · R reiniciar
+  </div>
 
-  <div id="mobileControls">
-    <div class="dpad">
-      <button data-key="ArrowUp">▲</button>
-      <button data-key="ArrowLeft">◀</button>
-      <button data-key="ArrowDown">▼</button>
-      <button data-key="ArrowRight">▶</button>
+  <div id="loading">
+    <div>
+      <strong>Auto 3D</strong>
+      <span>Cargando físicas y campo de pruebas…</span>
     </div>
-    <button class="brake" data-key="Space">FRENO</button>
+  </div>
+
+  <div id="mobileControls" aria-label="Controles táctiles">
+    <div class="dpad">
+      <button data-key="ArrowUp" aria-label="Acelerar">▲</button>
+      <button data-key="ArrowLeft" aria-label="Izquierda">◀</button>
+      <button data-key="ArrowDown" aria-label="Reversa">▼</button>
+      <button data-key="ArrowRight" aria-label="Derecha">▶</button>
+    </div>
+    <div class="pedals">
+      <button class="handbrake" data-key="ShiftLeft">MANO</button>
+      <button class="brake" data-key="Space">FRENO</button>
+    </div>
   </div>
 
   <canvas id="game"></canvas>

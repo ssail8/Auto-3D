@@ -6,16 +6,14 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const chassisBody = new CANNON.Body({
     mass: 1280,
     material: chassisPhysics,
-    angularDamping: 0.55,
+    angularDamping: 0.58,
     linearDamping: 0.012,
     allowSleep: false
   });
 
-  // Keep the center of mass below the geometric center of the body. A lower
-  // mass center makes weight transfer progressive instead of instantly tipping.
   chassisBody.addShape(
-    new CANNON.Box(new CANNON.Vec3(0.98, 0.32, 2.08)),
-    new CANNON.Vec3(0, 0.20, 0)
+    new CANNON.Box(new CANNON.Vec3(1.02, 0.30, 2.08)),
+    new CANNON.Vec3(0, 0.18, 0)
   );
   chassisBody.position.set(spawn.x, spawn.y, spawn.z);
 
@@ -32,9 +30,9 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     suspensionStiffness: 32,
     suspensionRestLength: 0.27,
     frictionSlip: 3.2,
-    dampingRelaxation: 3.6,
-    dampingCompression: 4.8,
-    maxSuspensionForce: 90000,
+    dampingRelaxation: 3.8,
+    dampingCompression: 5.1,
+    maxSuspensionForce: 92000,
     rollInfluence: 0.012,
     axleLocal: new CANNON.Vec3(-1, 0, 0),
     maxSuspensionTravel: 0.15,
@@ -43,10 +41,10 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   };
 
   const wheelPoints = [
-    [-0.90, 0.02, -1.38],
-    [ 0.90, 0.02, -1.38],
-    [-0.90, 0.02,  1.36],
-    [ 0.90, 0.02,  1.36]
+    [-0.92, 0.02, -1.38],
+    [ 0.92, 0.02, -1.38],
+    [-0.92, 0.02,  1.36],
+    [ 0.92, 0.02,  1.36]
   ];
 
   for (const p of wheelPoints) {
@@ -57,52 +55,120 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   }
   vehicle.addToWorld(world);
 
-  // ----- visual car -----
   const carVisual = new THREE.Group();
   scene.add(carVisual);
 
-  const paint = new THREE.MeshStandardMaterial({ color: 0xb7192b, roughness: 0.31, metalness: 0.38 });
-  const paintDark = new THREE.MeshStandardMaterial({ color: 0x78101c, roughness: 0.38, metalness: 0.32 });
-  const black = new THREE.MeshStandardMaterial({ color: 0x111318, roughness: 0.65, metalness: 0.14 });
-  const glass = new THREE.MeshStandardMaterial({ color: 0x6da6c8, roughness: 0.14, metalness: 0.16, transparent: true, opacity: 0.82 });
-  const chrome = new THREE.MeshStandardMaterial({ color: 0xb9c1c8, roughness: 0.28, metalness: 0.82 });
-  const whiteLight = new THREE.MeshStandardMaterial({ color: 0xf6f8ff, emissive: 0xd7ebff, emissiveIntensity: 1.8 });
-  const redLight = new THREE.MeshStandardMaterial({ color: 0xb91c1c, emissive: 0x7f1d1d, emissiveIntensity: 1.5 });
+  const green = new THREE.MeshStandardMaterial({ color: 0x9fb64b, roughness: 0.82, metalness: 0.06 });
+  const greenDark = new THREE.MeshStandardMaterial({ color: 0x68852e, roughness: 0.88, metalness: 0.05 });
+  const bellyMat = new THREE.MeshStandardMaterial({ color: 0xd7d78b, roughness: 0.85, metalness: 0.02 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf8f7f2, roughness: 0.65, metalness: 0.04 });
+  const irisMat = new THREE.MeshStandardMaterial({ color: 0x8b6116, roughness: 0.42, metalness: 0.22 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.28, metalness: 0.08 });
+  const beakMat = new THREE.MeshStandardMaterial({ color: 0xc9732d, roughness: 0.72, metalness: 0.06 });
+  const crestRed = new THREE.MeshStandardMaterial({ color: 0xd64f27, roughness: 0.78, metalness: 0.04 });
+  const crestYellow = new THREE.MeshStandardMaterial({ color: 0xf0c94f, roughness: 0.78, metalness: 0.03 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.84, metalness: 0.08 });
+  const clawMat = new THREE.MeshStandardMaterial({ color: 0x9d5a26, roughness: 0.76, metalness: 0.04 });
 
-  function box(name, size, pos, material, parent = carVisual) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(...size), material);
-    mesh.name = name;
-    mesh.position.set(...pos);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    parent.add(mesh);
-    return mesh;
+  const bodyGeometry = new THREE.SphereGeometry(1.34, 36, 28);
+  const body = new THREE.Mesh(bodyGeometry, green);
+  body.scale.set(1.02, 1.00, 1.18);
+  body.position.set(0, 0.96, 0.04);
+  body.castShadow = true;
+  body.receiveShadow = true;
+  carVisual.add(body);
+  const bodyPos = bodyGeometry.attributes.position;
+  const bodyBase = Float32Array.from(bodyPos.array);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.86, 28, 20), bellyMat);
+  belly.scale.set(1.00, 0.86, 0.88);
+  belly.position.set(0, 0.60, -0.10);
+  belly.castShadow = true;
+  carVisual.add(belly);
+
+  const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.58, 28, 24), white);
+  eyeWhite.position.set(0, 1.08, -1.20);
+  eyeWhite.castShadow = true;
+  carVisual.add(eyeWhite);
+
+  const iris = new THREE.Mesh(new THREE.SphereGeometry(0.28, 24, 20), irisMat);
+  iris.position.set(0, 1.03, -1.70);
+  carVisual.add(iris);
+
+  const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), pupilMat);
+  pupil.position.set(0, 1.02, -1.92);
+  carVisual.add(pupil);
+
+  const eyeShine = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), white);
+  eyeShine.position.set(0.13, 1.16, -1.78);
+  carVisual.add(eyeShine);
+
+  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.70, 18), beakMat);
+  beak.rotation.x = Math.PI / 2;
+  beak.scale.set(1.0, 1.18, 0.90);
+  beak.position.set(0, 0.63, -1.53);
+  beak.castShadow = true;
+  carVisual.add(beak);
+
+  const beakLower = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.24), beakMat);
+  beakLower.position.set(0, 0.40, -1.36);
+  beakLower.rotation.x = -0.22;
+  beakLower.castShadow = true;
+  carVisual.add(beakLower);
+
+  const wingL = new THREE.Mesh(new THREE.SphereGeometry(0.46, 22, 18), greenDark);
+  wingL.scale.set(0.45, 0.22, 0.84);
+  wingL.position.set(-1.22, 0.74, -0.06);
+  wingL.rotation.z = 0.36;
+  wingL.castShadow = true;
+  carVisual.add(wingL);
+
+  const wingR = wingL.clone();
+  wingR.position.x = 1.22;
+  wingR.rotation.z = -0.36;
+  carVisual.add(wingR);
+
+  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.58, 16), greenDark);
+  tail.rotation.x = -Math.PI / 2;
+  tail.position.set(0, 0.76, 1.53);
+  tail.castShadow = true;
+  carVisual.add(tail);
+
+  const crest1 = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.64, 12), crestYellow);
+  crest1.position.set(-0.13, 1.92, -0.16);
+  crest1.rotation.z = -0.22;
+  crest1.castShadow = true;
+  carVisual.add(crest1);
+
+  const crest2 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.70, 12), crestRed);
+  crest2.position.set(0, 2.04, -0.02);
+  crest2.rotation.z = -0.04;
+  crest2.castShadow = true;
+  carVisual.add(crest2);
+
+  const crest3 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.58, 12), crestYellow);
+  crest3.position.set(0.12, 1.94, 0.10);
+  crest3.rotation.z = 0.26;
+  crest3.castShadow = true;
+  carVisual.add(crest3);
+
+  const clawGroup = new THREE.Group();
+  clawGroup.position.set(0, -0.10, -0.32);
+  for (const side of [-0.18, 0.18]) {
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.30, 10), beakMat);
+    leg.position.set(side, 0.04, 0);
+    leg.castShadow = true;
+    clawGroup.add(leg);
+    for (const toeOffset of [-0.08, 0, 0.08]) {
+      const toe = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.18, 8), clawMat);
+      toe.rotation.z = Math.PI / 2;
+      toe.rotation.y = toeOffset * 3.5;
+      toe.position.set(side + toeOffset * 0.4, -0.10, -0.02 + Math.abs(toeOffset) * 0.02);
+      toe.castShadow = true;
+      clawGroup.add(toe);
+    }
   }
-
-  const shellGeometry = new THREE.BoxGeometry(1.98, 0.48, 4.22, 5, 2, 12);
-  const shell = new THREE.Mesh(shellGeometry, paint);
-  shell.position.y = 0.10;
-  shell.castShadow = true;
-  shell.receiveShadow = true;
-  carVisual.add(shell);
-  const shellPos = shellGeometry.attributes.position;
-  const shellBase = Float32Array.from(shellPos.array);
-
-  const sillL = box('sillL', [0.16, 0.24, 3.25], [-1.0, 0.00, 0.05], paintDark);
-  const sillR = box('sillR', [0.16, 0.24, 3.25], [ 1.0, 0.00, 0.05], paintDark);
-  const hood = box('hood', [1.84, 0.17, 1.34], [0, 0.43, -1.32], paint);
-  const trunk = box('trunk', [1.78, 0.17, 0.94], [0, 0.43, 1.56], paint);
-  const cabin = box('cabin', [1.66, 0.74, 1.72], [0, 0.79, 0.12], glass);
-  const roof = box('roof', [1.58, 0.15, 1.45], [0, 1.16, 0.12], paint);
-  const frontBumper = box('frontBumper', [1.92, 0.20, 0.22], [0, 0.08, -2.18], black);
-  const rearBumper = box('rearBumper', [1.92, 0.20, 0.22], [0, 0.08, 2.18], black);
-  const mirrorL = box('mirrorL', [0.22, 0.12, 0.28], [-1.03, 0.82, -0.42], black);
-  const mirrorR = box('mirrorR', [0.22, 0.12, 0.28], [ 1.03, 0.82, -0.42], black);
-  box('grille', [0.86, 0.16, 0.07], [0, 0.10, -2.15], chrome);
-  for (const x of [-0.62, 0.62]) {
-    box('headlight', [0.42, 0.16, 0.08], [x, 0.37, -2.14], whiteLight);
-    box('tailLight', [0.42, 0.16, 0.08], [x, 0.37, 2.14], redLight);
-  }
+  carVisual.add(clawGroup);
 
   const wheelMeshes = [];
   const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.92 });
@@ -131,72 +197,82 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     damage.total = clamp(weighted / 3.0 * 100, 0, 100);
   }
 
-  function deformShell() {
+  function deformBody() {
     const f = damage.front;
     const r = damage.rear;
     const l = damage.left;
     const rr = damage.right;
-    for (let i = 0; i < shellPos.count; i++) {
+    const u = damage.underbody;
+    for (let i = 0; i < bodyPos.count; i++) {
       const k = i * 3;
-      let x = shellBase[k];
-      let y = shellBase[k + 1];
-      let z = shellBase[k + 2];
+      let x = bodyBase[k];
+      let y = bodyBase[k + 1];
+      let z = bodyBase[k + 2];
 
-      const fw = clamp((-z - 0.20) / 1.90, 0, 1);
-      const rw = clamp(( z - 0.20) / 1.90, 0, 1);
-      const lw = clamp((-x - 0.20) / 0.80, 0, 1);
-      const rwSide = clamp((x - 0.20) / 0.80, 0, 1);
+      const fw = clamp((-z - 0.06) / 1.20, 0, 1);
+      const rw = clamp((z - 0.04) / 1.20, 0, 1);
+      const lw = clamp((-x - 0.04) / 0.84, 0, 1);
+      const sw = clamp((x - 0.04) / 0.84, 0, 1);
+      const uw = clamp((-y - 0.10) / 1.00, 0, 1);
 
-      z += f * 0.46 * fw;
-      z -= r * 0.42 * rw;
-      x += l * 0.17 * lw;
-      x -= rr * 0.17 * rwSide;
-      y += (f * fw + r * rw) * 0.035 * Math.sin(x * 8 + z * 4);
-      y -= (l * lw + rr * rwSide) * 0.025;
+      z += f * 0.34 * fw;
+      z -= r * 0.28 * rw;
+      x += l * 0.14 * lw;
+      x -= rr * 0.14 * sw;
+      y -= u * 0.16 * uw;
+      y += (f * fw + r * rw) * 0.025 * Math.sin((x + z) * 5.5);
 
-      shellPos.setXYZ(i, x, y, z);
+      bodyPos.setXYZ(i, x, y, z);
     }
-    shellPos.needsUpdate = true;
-    shellGeometry.computeVertexNormals();
-    shellGeometry.computeBoundingSphere();
+    bodyPos.needsUpdate = true;
+    bodyGeometry.computeVertexNormals();
+    bodyGeometry.computeBoundingSphere();
 
-    frontBumper.scale.z = 1 - f * 0.72;
-    frontBumper.position.z = -2.18 + f * 0.18;
-    hood.scale.z = 1 - f * 0.25;
-    hood.position.z = -1.32 + f * 0.21;
-    hood.rotation.x = -f * 0.10;
-    rearBumper.scale.z = 1 - r * 0.70;
-    rearBumper.position.z = 2.18 - r * 0.17;
-    trunk.scale.z = 1 - r * 0.23;
-    trunk.position.z = 1.56 - r * 0.18;
-    trunk.rotation.x = r * 0.08;
-    sillL.position.x = -1.0 + l * 0.13;
-    sillL.scale.x = 1 - l * 0.42;
-    sillR.position.x = 1.0 - rr * 0.13;
-    sillR.scale.x = 1 - rr * 0.42;
-    cabin.rotation.z = (l - rr) * 0.038;
-    roof.rotation.z = (l - rr) * 0.026;
-    mirrorL.rotation.z = l * 0.55;
-    mirrorR.rotation.z = -rr * 0.55;
+    beak.position.z = -1.53 + f * 0.16 - r * 0.04;
+    beak.position.y = 0.63 - f * 0.05;
+    beak.rotation.x = Math.PI / 2 + f * 0.16;
+    beakLower.position.z = -1.36 + f * 0.12;
+    beakLower.position.y = 0.40 - f * 0.04;
+    eyeWhite.scale.set(1 - f * 0.08, 1 - f * 0.06, 1 + f * 0.04);
+    iris.position.x = (rr - l) * 0.03;
+    pupil.position.x = (rr - l) * 0.04;
+    wingL.position.x = -1.22 + l * 0.10;
+    wingR.position.x = 1.22 - rr * 0.10;
+    wingL.rotation.z = 0.36 + l * 0.18;
+    wingR.rotation.z = -0.36 - rr * 0.18;
+    tail.position.z = 1.53 - r * 0.12;
+    tail.rotation.x = -Math.PI / 2 - r * 0.18;
+    crest1.rotation.x = -f * 0.24;
+    crest2.rotation.x = -f * 0.28;
+    crest3.rotation.x = -f * 0.20;
+    belly.position.y = 0.60 - u * 0.06;
   }
 
   function resetDamage() {
     damage.front = damage.rear = damage.left = damage.right = damage.underbody = 0;
     damage.total = damage.lastImpact = 0;
-    for (let i = 0; i < shellPos.count; i++) {
+    for (let i = 0; i < bodyPos.count; i++) {
       const k = i * 3;
-      shellPos.setXYZ(i, shellBase[k], shellBase[k + 1], shellBase[k + 2]);
+      bodyPos.setXYZ(i, bodyBase[k], bodyBase[k + 1], bodyBase[k + 2]);
     }
-    shellPos.needsUpdate = true;
-    shellGeometry.computeVertexNormals();
-    frontBumper.scale.set(1, 1, 1); frontBumper.position.set(0, 0.08, -2.18);
-    rearBumper.scale.set(1, 1, 1); rearBumper.position.set(0, 0.08, 2.18);
-    hood.scale.set(1, 1, 1); hood.position.set(0, 0.43, -1.32); hood.rotation.set(0, 0, 0);
-    trunk.scale.set(1, 1, 1); trunk.position.set(0, 0.43, 1.56); trunk.rotation.set(0, 0, 0);
-    sillL.scale.set(1, 1, 1); sillL.position.set(-1.0, 0.00, 0.05);
-    sillR.scale.set(1, 1, 1); sillR.position.set(1.0, 0.00, 0.05);
-    cabin.rotation.set(0, 0, 0); roof.rotation.set(0, 0, 0);
-    mirrorL.rotation.set(0, 0, 0); mirrorR.rotation.set(0, 0, 0);
+    bodyPos.needsUpdate = true;
+    bodyGeometry.computeVertexNormals();
+    eyeWhite.scale.set(1, 1, 1);
+    iris.position.set(0, 1.03, -1.70);
+    pupil.position.set(0, 1.02, -1.92);
+    beak.position.set(0, 0.63, -1.53);
+    beak.rotation.set(Math.PI / 2, 0, 0);
+    beakLower.position.set(0, 0.40, -1.36);
+    wingL.position.set(-1.22, 0.74, -0.06);
+    wingR.position.set(1.22, 0.74, -0.06);
+    wingL.rotation.set(0, 0, 0.36);
+    wingR.rotation.set(0, 0, -0.36);
+    tail.position.set(0, 0.76, 1.53);
+    tail.rotation.set(-Math.PI / 2, 0, 0);
+    crest1.rotation.set(0, 0, -0.22);
+    crest2.rotation.set(0, 0, -0.04);
+    crest3.rotation.set(0, 0, 0.26);
+    belly.position.set(0, 0.60, -0.10);
   }
 
   chassisBody.addEventListener('collide', (event) => {
@@ -228,12 +304,19 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     }
 
     recomputeDamageTotal();
-    deformShell();
+    deformBody();
   });
 
   const forwardLocal = new CANNON.Vec3(0, 0, -1);
+  const rightLocal = new CANNON.Vec3(1, 0, 0);
   const forwardWorld = new CANNON.Vec3();
-  const aeroForce = new CANNON.Vec3();
+  const rightWorld = new CANNON.Vec3();
+
+  function groundedWheelCount() {
+    let n = 0;
+    for (const info of vehicle.wheelInfos) if (info.isInContact) n++;
+    return n;
+  }
 
   function getTelemetry() {
     chassisBody.quaternion.vmult(forwardLocal, forwardWorld);
@@ -244,51 +327,45 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
 
   function updateDrive(dt, input) {
     const { speedKmh, signedSpeed, speed } = getTelemetry();
+    const grounded = groundedWheelCount();
     const steerInput = (input.left ? 1 : 0) - (input.right ? 1 : 0);
 
-    // A real car has much less usable steering angle as speed rises. The old
-    // tune still allowed ~22 degrees around 50 km/h, enough to trip the tires
-    // and roll the chassis. This curve progressively trades steering for stability.
     let steerMax;
-    if (speedKmh < 35) {
-      steerMax = lerp(0.46, 0.32, speedKmh / 35);
-    } else if (speedKmh < 80) {
-      steerMax = lerp(0.32, 0.18, (speedKmh - 35) / 45);
-    } else {
-      steerMax = lerp(0.18, 0.095, clamp((speedKmh - 80) / 100, 0, 1));
-    }
+    if (speedKmh < 35) steerMax = lerp(0.46, 0.32, speedKmh / 35);
+    else if (speedKmh < 80) steerMax = lerp(0.32, 0.18, (speedKmh - 35) / 45);
+    else steerMax = lerp(0.18, 0.095, clamp((speedKmh - 80) / 100, 0, 1));
+
     const steerTarget = steerInput * steerMax;
-    const steerResponse = lerp(7.5, 3.2, clamp(speedKmh / 160, 0, 1));
-    const steerRate = 1 - Math.exp(-steerResponse * dt);
-    steerState = lerp(steerState, steerTarget, steerRate);
+    const steerResponse = 1 - Math.pow(0.00008, dt);
+    steerState = lerp(steerState, steerTarget, steerResponse);
     vehicle.setSteeringValue(steerState, 0);
     vehicle.setSteeringValue(steerState, 1);
 
-    // High-speed tire grip is reduced slightly so an abrupt turn produces
-    // progressive understeer/slip instead of enough lateral force to flip the car.
-    const gripFade = clamp(speedKmh / 180, 0, 1);
-    const frontGrip = lerp(3.55, 2.30, gripFade);
-    const rearGrip = lerp(3.85, 2.65, gripFade);
-    vehicle.wheelInfos[0].frictionSlip = frontGrip;
-    vehicle.wheelInfos[1].frictionSlip = frontGrip;
-    vehicle.wheelInfos[2].frictionSlip = rearGrip;
-    vehicle.wheelInfos[3].frictionSlip = rearGrip;
+    let baseGrip;
+    if (speedKmh < 40) baseGrip = 3.4;
+    else if (speedKmh < 90) baseGrip = lerp(3.4, 2.6, (speedKmh - 40) / 50);
+    else baseGrip = lerp(2.6, 1.95, clamp((speedKmh - 90) / 90, 0, 1));
+
+    vehicle.wheelInfos[0].frictionSlip = baseGrip * 1.02;
+    vehicle.wheelInfos[1].frictionSlip = baseGrip * 1.02;
+    vehicle.wheelInfos[2].frictionSlip = input.handbrake ? 1.1 : baseGrip * 0.98;
+    vehicle.wheelInfos[3].frictionSlip = input.handbrake ? 1.1 : baseGrip * 0.98;
 
     let engineForce = 0;
     let autoBrake = 0;
     if (input.throttle) {
-      if (signedSpeed < -1.8) {
+      if (signedSpeed < -1.6) {
         autoBrake = 32000;
       } else {
-        const curve = lerp(1, 0.12, clamp(Math.max(0, signedSpeed) * 3.6 / 195, 0, 1));
-        engineForce = 4500 * curve;
+        const curve = lerp(1, 0.10, clamp(Math.max(0, speedKmh) / 195, 0, 1));
+        engineForce = 4200 * curve * (grounded > 0 ? 1 : 0.45);
       }
     } else if (input.reverse) {
       if (signedSpeed > 1.8) {
         autoBrake = 36000;
       } else {
         const reverseCurve = lerp(1, 0.22, clamp(Math.max(0, -signedSpeed) * 3.6 / 58, 0, 1));
-        engineForce = -2400 * reverseCurve;
+        engineForce = -2300 * reverseCurve * (grounded > 0 ? 1 : 0.45);
       }
     }
 
@@ -297,40 +374,39 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     vehicle.applyEngineForce(engineForce, 2);
     vehicle.applyEngineForce(engineForce, 3);
 
-    const serviceBrake = input.brake ? 42000 : autoBrake;
+    const serviceBrake = input.brake ? 44000 : autoBrake;
     vehicle.setBrake(serviceBrake, 0);
     vehicle.setBrake(serviceBrake, 1);
     vehicle.setBrake(serviceBrake * 0.82, 2);
     vehicle.setBrake(serviceBrake * 0.82, 3);
     if (input.handbrake) {
-      vehicle.setBrake(60000, 2);
-      vehicle.setBrake(60000, 3);
+      vehicle.setBrake(65000, 2);
+      vehicle.setBrake(65000, 3);
     }
 
-    // Drag opposes motion. Downforce is deliberately world-down while at least
-    // two tires are on the ground; this prevents suspension oscillation from
-    // turning aerodynamic load into a sideways or lifting force during body roll.
     if (speed > 0.3) {
-      const dragMag = Math.min(9000, 0.5 * 1.225 * 0.72 * speed * speed);
+      const dragMag = Math.min(9500, 0.5 * 1.225 * 0.72 * speed * speed);
       const drag = chassisBody.velocity.clone();
       drag.normalize();
       drag.scale(-dragMag, drag);
       chassisBody.applyForce(drag, chassisBody.position);
 
-      let contacts = 0;
-      for (const info of vehicle.wheelInfos) if (info.isInContact) contacts++;
-      if (contacts >= 2 && speed > 4) {
-        const downforceMag = Math.min(9500, speed * speed * 4.2);
-        aeroForce.set(0, -downforceMag, 0);
-        chassisBody.applyForce(aeroForce, chassisBody.position);
-
-        // Extra heave damping only counters upward suspension bounce; it does
-        // not glue the car to the road or interfere with genuine ramp launches.
-        if (contacts >= 3 && chassisBody.velocity.y > 0.25) {
-          const heaveDamping = Math.min(6500, (chassisBody.velocity.y - 0.25) * 2400);
-          aeroForce.set(0, -heaveDamping, 0);
-          chassisBody.applyForce(aeroForce, chassisBody.position);
+      if (grounded > 0) {
+        const downforceMag = Math.min(8600, speed * speed * 2.25);
+        chassisBody.applyForce(new CANNON.Vec3(0, -downforceMag, 0), chassisBody.position);
+        if (chassisBody.velocity.y > 0.2) {
+          chassisBody.applyForce(new CANNON.Vec3(0, -Math.min(4200, chassisBody.velocity.y * 2300), 0), chassisBody.position);
         }
+      }
+
+      chassisBody.quaternion.vmult(rightLocal, rightWorld);
+      const lateralSpeed = chassisBody.velocity.dot(rightWorld);
+      const yawDamp = clamp(Math.abs(lateralSpeed) * 180, 0, 3200);
+      chassisBody.angularVelocity.y *= Math.max(0, 1 - dt * 0.55);
+      if (grounded > 1 && yawDamp > 0) {
+        const lateralForce = rightWorld.clone();
+        lateralForce.scale(-lateralSpeed * 90, lateralForce);
+        chassisBody.applyForce(lateralForce, chassisBody.position);
       }
     }
 
@@ -366,16 +442,9 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       vehicle.wheelInfos[i].rotation = 0;
       vehicle.wheelInfos[i].deltaRotation = 0;
       vehicle.wheelInfos[i].suspensionLength = wheelBase.suspensionRestLength;
-      vehicle.wheelInfos[i].frictionSlip = wheelBase.frictionSlip;
     }
     resetDamage();
     syncVisuals();
-  }
-
-  function groundedWheelCount() {
-    let n = 0;
-    for (const info of vehicle.wheelInfos) if (info.isInContact) n++;
-    return n;
   }
 
   function consumeCameraShake(dt) {

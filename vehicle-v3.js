@@ -58,117 +58,200 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const carVisual = new THREE.Group();
   scene.add(carVisual);
 
-  const green = new THREE.MeshStandardMaterial({ color: 0x9fb64b, roughness: 0.82, metalness: 0.06 });
-  const greenDark = new THREE.MeshStandardMaterial({ color: 0x68852e, roughness: 0.88, metalness: 0.05 });
+  const green = new THREE.MeshStandardMaterial({ color: 0x99ac49, roughness: 0.82, metalness: 0.06 });
+  const greenLight = new THREE.MeshStandardMaterial({ color: 0xb9c65b, roughness: 0.84, metalness: 0.05 });
+  const greenDark = new THREE.MeshStandardMaterial({ color: 0x677f2c, roughness: 0.90, metalness: 0.05 });
   const bellyMat = new THREE.MeshStandardMaterial({ color: 0xd7d78b, roughness: 0.85, metalness: 0.02 });
-  const white = new THREE.MeshStandardMaterial({ color: 0xf8f7f2, roughness: 0.65, metalness: 0.04 });
-  const irisMat = new THREE.MeshStandardMaterial({ color: 0x8b6116, roughness: 0.42, metalness: 0.22 });
-  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.28, metalness: 0.08 });
-  const beakMat = new THREE.MeshStandardMaterial({ color: 0xc9732d, roughness: 0.72, metalness: 0.06 });
-  const crestRed = new THREE.MeshStandardMaterial({ color: 0xd64f27, roughness: 0.78, metalness: 0.04 });
-  const crestYellow = new THREE.MeshStandardMaterial({ color: 0xf0c94f, roughness: 0.78, metalness: 0.03 });
+  const white = new THREE.MeshStandardMaterial({ color: 0xf7f6f0, roughness: 0.64, metalness: 0.04 });
+  const irisMat = new THREE.MeshStandardMaterial({ color: 0x9a6b14, roughness: 0.42, metalness: 0.22 });
+  const pupilMat = new THREE.MeshStandardMaterial({ color: 0x111111, roughness: 0.30, metalness: 0.08 });
+  const beakMat = new THREE.MeshStandardMaterial({ color: 0xc9752b, roughness: 0.72, metalness: 0.06 });
+  const crestRed = new THREE.MeshStandardMaterial({ color: 0xd34b22, roughness: 0.78, metalness: 0.04 });
+  const crestOrange = new THREE.MeshStandardMaterial({ color: 0xe38b29, roughness: 0.78, metalness: 0.04 });
+  const crestYellow = new THREE.MeshStandardMaterial({ color: 0xf0d860, roughness: 0.78, metalness: 0.03 });
   const black = new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.84, metalness: 0.08 });
   const clawMat = new THREE.MeshStandardMaterial({ color: 0x9d5a26, roughness: 0.76, metalness: 0.04 });
 
-  const bodyGeometry = new THREE.SphereGeometry(1.34, 36, 28);
+  const bodyGeometry = new THREE.SphereGeometry(1.34, 42, 34);
   const body = new THREE.Mesh(bodyGeometry, green);
-  body.scale.set(1.02, 1.00, 1.18);
-  body.position.set(0, 0.96, 0.04);
+  body.scale.set(1.10, 0.97, 1.18);
+  body.position.set(0, 0.98, 0.05);
   body.castShadow = true;
   body.receiveShadow = true;
   carVisual.add(body);
   const bodyPos = bodyGeometry.attributes.position;
   const bodyBase = Float32Array.from(bodyPos.array);
 
-  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.86, 28, 20), bellyMat);
-  belly.scale.set(1.00, 0.86, 0.88);
-  belly.position.set(0, 0.60, -0.10);
+  const bodyTop = new THREE.Mesh(new THREE.SphereGeometry(1.16, 28, 20), greenLight);
+  bodyTop.scale.set(1.0, 0.54, 0.88);
+  bodyTop.position.set(0, 1.45, -0.08);
+  bodyTop.castShadow = true;
+  carVisual.add(bodyTop);
+
+  const cheekL = new THREE.Mesh(new THREE.SphereGeometry(0.48, 24, 18), greenLight);
+  cheekL.scale.set(1.0, 0.72, 0.78);
+  cheekL.position.set(-0.54, 0.74, -1.02);
+  cheekL.castShadow = true;
+  carVisual.add(cheekL);
+
+  const cheekR = cheekL.clone();
+  cheekR.position.x = 0.54;
+  carVisual.add(cheekR);
+
+  const brow = new THREE.Mesh(new THREE.SphereGeometry(0.64, 24, 16), greenLight);
+  brow.scale.set(1.18, 0.46, 0.60);
+  brow.position.set(0, 1.38, -0.88);
+  brow.castShadow = true;
+  carVisual.add(brow);
+
+  const belly = new THREE.Mesh(new THREE.SphereGeometry(0.94, 30, 22), bellyMat);
+  belly.scale.set(1.0, 0.80, 0.88);
+  belly.position.set(0, 0.62, -0.10);
   belly.castShadow = true;
   carVisual.add(belly);
 
-  const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.58, 28, 24), white);
-  eyeWhite.position.set(0, 1.08, -1.20);
+  const eyeSocket = new THREE.Mesh(new THREE.SphereGeometry(0.72, 26, 20), white);
+  eyeSocket.scale.set(1.0, 1.0, 0.46);
+  eyeSocket.position.set(0, 1.07, -1.18);
+  eyeSocket.castShadow = true;
+  carVisual.add(eyeSocket);
+
+  const eyeWhite = new THREE.Mesh(new THREE.SphereGeometry(0.56, 28, 24), white);
+  eyeWhite.position.set(0, 1.08, -1.32);
   eyeWhite.castShadow = true;
   carVisual.add(eyeWhite);
 
-  const iris = new THREE.Mesh(new THREE.SphereGeometry(0.28, 24, 20), irisMat);
-  iris.position.set(0, 1.03, -1.70);
+  const iris = new THREE.Mesh(new THREE.SphereGeometry(0.29, 24, 20), irisMat);
+  iris.position.set(0, 1.03, -1.82);
   carVisual.add(iris);
 
-  const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.14, 20, 16), pupilMat);
-  pupil.position.set(0, 1.02, -1.92);
+  const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.145, 20, 16), pupilMat);
+  pupil.position.set(0, 1.02, -2.02);
   carVisual.add(pupil);
 
-  const eyeShine = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), white);
-  eyeShine.position.set(0.13, 1.16, -1.78);
-  carVisual.add(eyeShine);
+  const eyeShineA = new THREE.Mesh(new THREE.SphereGeometry(0.06, 16, 12), white);
+  eyeShineA.position.set(0.12, 1.16, -1.90);
+  carVisual.add(eyeShineA);
+  const eyeShineB = new THREE.Mesh(new THREE.SphereGeometry(0.03, 14, 10), white);
+  eyeShineB.position.set(-0.07, 0.92, -1.94);
+  carVisual.add(eyeShineB);
 
-  const beak = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.70, 18), beakMat);
-  beak.rotation.x = Math.PI / 2;
-  beak.scale.set(1.0, 1.18, 0.90);
-  beak.position.set(0, 0.63, -1.53);
-  beak.castShadow = true;
-  carVisual.add(beak);
+  const upperLid = new THREE.Mesh(new THREE.SphereGeometry(0.50, 22, 16), greenLight);
+  upperLid.scale.set(1.06, 0.34, 0.48);
+  upperLid.position.set(0, 1.37, -1.25);
+  upperLid.castShadow = true;
+  carVisual.add(upperLid);
 
-  const beakLower = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.08, 0.24), beakMat);
-  beakLower.position.set(0, 0.40, -1.36);
-  beakLower.rotation.x = -0.22;
+  const lowerLid = new THREE.Mesh(new THREE.SphereGeometry(0.42, 20, 14), bellyMat);
+  lowerLid.scale.set(1.02, 0.22, 0.40);
+  lowerLid.position.set(0, 0.69, -1.22);
+  lowerLid.castShadow = true;
+  carVisual.add(lowerLid);
+
+  const beakUpper = new THREE.Mesh(new THREE.ConeGeometry(0.23, 0.70, 22), beakMat);
+  beakUpper.rotation.x = -Math.PI / 2;
+  beakUpper.scale.set(1.0, 1.20, 0.92);
+  beakUpper.position.set(0, 0.69, -1.63);
+  beakUpper.castShadow = true;
+  carVisual.add(beakUpper);
+
+  const beakLower = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.46, 18), beakMat);
+  beakLower.rotation.x = -Math.PI / 2 + 0.22;
+  beakLower.scale.set(1.0, 1.08, 0.80);
+  beakLower.position.set(0, 0.46, -1.47);
   beakLower.castShadow = true;
   carVisual.add(beakLower);
 
-  const wingL = new THREE.Mesh(new THREE.SphereGeometry(0.46, 22, 18), greenDark);
-  wingL.scale.set(0.45, 0.22, 0.84);
-  wingL.position.set(-1.22, 0.74, -0.06);
-  wingL.rotation.z = 0.36;
+  const nostrilL = new THREE.Mesh(new THREE.SphereGeometry(0.028, 12, 10), black);
+  nostrilL.position.set(-0.06, 0.75, -1.50);
+  carVisual.add(nostrilL);
+  const nostrilR = nostrilL.clone();
+  nostrilR.position.x = 0.06;
+  carVisual.add(nostrilR);
+
+  const wingL = new THREE.Mesh(new THREE.SphereGeometry(0.52, 22, 18), greenDark);
+  wingL.scale.set(0.48, 0.24, 0.96);
+  wingL.position.set(-1.27, 0.82, -0.02);
+  wingL.rotation.z = 0.48;
   wingL.castShadow = true;
   carVisual.add(wingL);
 
+  const wingL2 = new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 14), greenDark);
+  wingL2.scale.set(0.36, 0.16, 0.72);
+  wingL2.position.set(-1.36, 0.68, 0.26);
+  wingL2.rotation.z = 0.62;
+  wingL2.castShadow = true;
+  carVisual.add(wingL2);
+
   const wingR = wingL.clone();
-  wingR.position.x = 1.22;
-  wingR.rotation.z = -0.36;
+  wingR.position.x = 1.27;
+  wingR.rotation.z = -0.48;
   carVisual.add(wingR);
 
-  const tail = new THREE.Mesh(new THREE.ConeGeometry(0.24, 0.58, 16), greenDark);
-  tail.rotation.x = -Math.PI / 2;
-  tail.position.set(0, 0.76, 1.53);
-  tail.castShadow = true;
-  carVisual.add(tail);
+  const wingR2 = wingL2.clone();
+  wingR2.position.x = 1.36;
+  wingR2.rotation.z = -0.62;
+  carVisual.add(wingR2);
 
-  const crest1 = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.64, 12), crestYellow);
-  crest1.position.set(-0.13, 1.92, -0.16);
-  crest1.rotation.z = -0.22;
+  const tailCenter = new THREE.Mesh(new THREE.ConeGeometry(0.15, 0.60, 14), greenDark);
+  tailCenter.rotation.x = Math.PI / 2;
+  tailCenter.position.set(0, 0.88, 1.64);
+  tailCenter.castShadow = true;
+  carVisual.add(tailCenter);
+
+  const tailL = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.54, 14), greenDark);
+  tailL.rotation.x = Math.PI / 2 + 0.16;
+  tailL.rotation.z = 0.24;
+  tailL.position.set(-0.18, 0.82, 1.56);
+  tailL.castShadow = true;
+  carVisual.add(tailL);
+
+  const tailR = tailL.clone();
+  tailR.rotation.z = -0.24;
+  tailR.position.x = 0.18;
+  carVisual.add(tailR);
+
+  const crest1 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.56, 12), crestYellow);
+  crest1.position.set(-0.14, 1.95, -0.04);
+  crest1.rotation.z = -0.28;
   crest1.castShadow = true;
   carVisual.add(crest1);
 
-  const crest2 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.70, 12), crestRed);
-  crest2.position.set(0, 2.04, -0.02);
-  crest2.rotation.z = -0.04;
+  const crest2 = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.66, 12), crestOrange);
+  crest2.position.set(-0.04, 2.08, 0.03);
+  crest2.rotation.z = -0.10;
   crest2.castShadow = true;
   carVisual.add(crest2);
 
-  const crest3 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.58, 12), crestYellow);
-  crest3.position.set(0.12, 1.94, 0.10);
-  crest3.rotation.z = 0.26;
+  const crest3 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.78, 12), crestRed);
+  crest3.position.set(0.06, 2.17, 0.08);
+  crest3.rotation.z = 0.08;
   crest3.castShadow = true;
   carVisual.add(crest3);
 
-  const clawGroup = new THREE.Group();
-  clawGroup.position.set(0, -0.10, -0.32);
+  const crest4 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.52, 12), crestYellow);
+  crest4.position.set(0.18, 1.98, 0.16);
+  crest4.rotation.z = 0.28;
+  crest4.castShadow = true;
+  carVisual.add(crest4);
+
+  const footGroup = new THREE.Group();
+  footGroup.position.set(0, -0.10, -0.30);
   for (const side of [-0.18, 0.18]) {
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.07, 0.30, 10), beakMat);
+    const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.065, 0.26, 10), beakMat);
     leg.position.set(side, 0.04, 0);
     leg.castShadow = true;
-    clawGroup.add(leg);
-    for (const toeOffset of [-0.08, 0, 0.08]) {
+    footGroup.add(leg);
+    for (const toeOffset of [-0.09, 0, 0.09]) {
       const toe = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.02, 0.18, 8), clawMat);
       toe.rotation.z = Math.PI / 2;
-      toe.rotation.y = toeOffset * 3.5;
-      toe.position.set(side + toeOffset * 0.4, -0.10, -0.02 + Math.abs(toeOffset) * 0.02);
+      toe.rotation.y = toeOffset * 3.4;
+      toe.position.set(side + toeOffset * 0.35, -0.10, -0.03 + Math.abs(toeOffset) * 0.02);
       toe.castShadow = true;
-      clawGroup.add(toe);
+      footGroup.add(toe);
     }
   }
-  carVisual.add(clawGroup);
+  carVisual.add(footGroup);
 
   const wheelMeshes = [];
   const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.92 });
@@ -194,7 +277,7 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
 
   function recomputeDamageTotal() {
     const weighted = damage.front + damage.rear + damage.left + damage.right + damage.underbody * 0.7;
-    damage.total = clamp(weighted / 3.0 * 100, 0, 100);
+    damage.total = clamp((weighted / 3.0) * 100, 0, 100);
   }
 
   function deformBody() {
@@ -209,18 +292,18 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       let y = bodyBase[k + 1];
       let z = bodyBase[k + 2];
 
-      const fw = clamp((-z - 0.06) / 1.20, 0, 1);
-      const rw = clamp((z - 0.04) / 1.20, 0, 1);
-      const lw = clamp((-x - 0.04) / 0.84, 0, 1);
-      const sw = clamp((x - 0.04) / 0.84, 0, 1);
-      const uw = clamp((-y - 0.10) / 1.00, 0, 1);
+      const fw = clamp((-z - 0.05) / 1.18, 0, 1);
+      const rw = clamp((z - 0.04) / 1.18, 0, 1);
+      const lw = clamp((-x - 0.04) / 0.86, 0, 1);
+      const sw = clamp((x - 0.04) / 0.86, 0, 1);
+      const uw = clamp((-y - 0.10) / 1.0, 0, 1);
 
-      z += f * 0.34 * fw;
+      z += f * 0.32 * fw;
       z -= r * 0.28 * rw;
       x += l * 0.14 * lw;
       x -= rr * 0.14 * sw;
       y -= u * 0.16 * uw;
-      y += (f * fw + r * rw) * 0.025 * Math.sin((x + z) * 5.5);
+      y += (f * fw + r * rw) * 0.026 * Math.sin((x + z) * 5.3);
 
       bodyPos.setXYZ(i, x, y, z);
     }
@@ -228,24 +311,26 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     bodyGeometry.computeVertexNormals();
     bodyGeometry.computeBoundingSphere();
 
-    beak.position.z = -1.53 + f * 0.16 - r * 0.04;
-    beak.position.y = 0.63 - f * 0.05;
-    beak.rotation.x = Math.PI / 2 + f * 0.16;
-    beakLower.position.z = -1.36 + f * 0.12;
-    beakLower.position.y = 0.40 - f * 0.04;
+    beakUpper.position.z = -1.63 + f * 0.18 - r * 0.04;
+    beakUpper.position.y = 0.69 - f * 0.05;
+    beakUpper.rotation.x = -Math.PI / 2 - f * 0.14;
+    beakLower.position.z = -1.47 + f * 0.12;
+    beakLower.position.y = 0.46 - f * 0.04;
+    beakLower.rotation.x = -Math.PI / 2 + 0.22 - f * 0.06;
     eyeWhite.scale.set(1 - f * 0.08, 1 - f * 0.06, 1 + f * 0.04);
     iris.position.x = (rr - l) * 0.03;
     pupil.position.x = (rr - l) * 0.04;
-    wingL.position.x = -1.22 + l * 0.10;
-    wingR.position.x = 1.22 - rr * 0.10;
-    wingL.rotation.z = 0.36 + l * 0.18;
-    wingR.rotation.z = -0.36 - rr * 0.18;
-    tail.position.z = 1.53 - r * 0.12;
-    tail.rotation.x = -Math.PI / 2 - r * 0.18;
-    crest1.rotation.x = -f * 0.24;
-    crest2.rotation.x = -f * 0.28;
-    crest3.rotation.x = -f * 0.20;
-    belly.position.y = 0.60 - u * 0.06;
+    wingL.position.x = -1.27 + l * 0.10;
+    wingL2.position.x = -1.36 + l * 0.08;
+    wingR.position.x = 1.27 - rr * 0.10;
+    wingR2.position.x = 1.36 - rr * 0.08;
+    wingL.rotation.z = 0.48 + l * 0.16;
+    wingR.rotation.z = -0.48 - rr * 0.16;
+    tailCenter.position.z = 1.64 - r * 0.14;
+    tailL.position.z = 1.56 - r * 0.12;
+    tailR.position.z = 1.56 - r * 0.12;
+    tailCenter.rotation.x = Math.PI / 2 - r * 0.20;
+    belly.position.y = 0.62 - u * 0.07;
   }
 
   function resetDamage() {
@@ -257,22 +342,29 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     }
     bodyPos.needsUpdate = true;
     bodyGeometry.computeVertexNormals();
+    bodyGeometry.computeBoundingSphere();
     eyeWhite.scale.set(1, 1, 1);
-    iris.position.set(0, 1.03, -1.70);
-    pupil.position.set(0, 1.02, -1.92);
-    beak.position.set(0, 0.63, -1.53);
-    beak.rotation.set(Math.PI / 2, 0, 0);
-    beakLower.position.set(0, 0.40, -1.36);
-    wingL.position.set(-1.22, 0.74, -0.06);
-    wingR.position.set(1.22, 0.74, -0.06);
-    wingL.rotation.set(0, 0, 0.36);
-    wingR.rotation.set(0, 0, -0.36);
-    tail.position.set(0, 0.76, 1.53);
-    tail.rotation.set(-Math.PI / 2, 0, 0);
-    crest1.rotation.set(0, 0, -0.22);
-    crest2.rotation.set(0, 0, -0.04);
-    crest3.rotation.set(0, 0, 0.26);
-    belly.position.set(0, 0.60, -0.10);
+    iris.position.set(0, 1.03, -1.82);
+    pupil.position.set(0, 1.02, -2.02);
+    beakUpper.position.set(0, 0.69, -1.63);
+    beakUpper.rotation.set(-Math.PI / 2, 0, 0);
+    beakLower.position.set(0, 0.46, -1.47);
+    beakLower.rotation.set(-Math.PI / 2 + 0.22, 0, 0);
+    wingL.position.set(-1.27, 0.82, -0.02);
+    wingL2.position.set(-1.36, 0.68, 0.26);
+    wingR.position.set(1.27, 0.82, -0.02);
+    wingR2.position.set(1.36, 0.68, 0.26);
+    wingL.rotation.set(0, 0, 0.48);
+    wingL2.rotation.set(0, 0, 0.62);
+    wingR.rotation.set(0, 0, -0.48);
+    wingR2.rotation.set(0, 0, -0.62);
+    tailCenter.position.set(0, 0.88, 1.64);
+    tailL.position.set(-0.18, 0.82, 1.56);
+    tailR.position.set(0.18, 0.82, 1.56);
+    tailCenter.rotation.set(Math.PI / 2, 0, 0);
+    tailL.rotation.set(Math.PI / 2 + 0.16, 0, 0.24);
+    tailR.rotation.set(Math.PI / 2 + 0.16, 0, -0.24);
+    belly.position.set(0, 0.62, -0.10);
   }
 
   chassisBody.addEventListener('collide', (event) => {

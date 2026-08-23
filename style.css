@@ -1,1 +1,45 @@
-*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0f172a;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}#game{display:block;width:100%;height:100%;touch-action:none}#hud{position:fixed;z-index:10;top:14px;left:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;max-width:calc(100% - 28px);padding:10px 12px;border-radius:14px;background:rgba(15,23,42,.78);color:#fff;backdrop-filter:blur(8px);box-shadow:0 8px 24px rgba(0,0,0,.18)}#hud>div,#hud button{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:8px 10px}#hud button{color:#fff;cursor:pointer;font-weight:700}#help{position:fixed;z-index:10;left:14px;bottom:14px;padding:8px 10px;border-radius:10px;background:rgba(15,23,42,.72);color:#fff;font-size:13px;backdrop-filter:blur(6px)}#loading{position:fixed;inset:0;z-index:20;display:grid;place-items:center;background:#0f172a;color:#fff;font-size:18px}#mobileControls{display:none;position:fixed;z-index:15;left:0;right:0;bottom:16px;padding:0 16px;justify-content:space-between;align-items:flex-end;pointer-events:none}.dpad{display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:8px;pointer-events:auto}.dpad button,.brake{border:1px solid rgba(255,255,255,.3);background:rgba(15,23,42,.8);color:#fff;border-radius:16px;font-size:22px;font-weight:800;backdrop-filter:blur(6px);touch-action:none}.dpad button:nth-child(1){grid-column:2}.dpad button:nth-child(2){grid-column:1;grid-row:2}.dpad button:nth-child(3){grid-column:2;grid-row:2}.dpad button:nth-child(4){grid-column:3;grid-row:2}.brake{pointer-events:auto;width:78px;height:78px;font-size:14px}@media(max-width:800px){#mobileControls{display:flex}#help{bottom:170px;max-width:70%;font-size:12px}#hud{font-size:13px;gap:6px;padding:8px}.dpad{grid-template-columns:54px 54px 54px;grid-template-rows:54px 54px}.brake{width:70px;height:70px}}
+*{box-sizing:border-box}
+:root{color-scheme:dark}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:#0b1118;font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+button{font:inherit}
+#game{display:block;width:100%;height:100%;touch-action:none}
+#hud{position:fixed;z-index:10;top:14px;left:14px;display:flex;gap:8px;align-items:stretch;flex-wrap:wrap;max-width:calc(100% - 28px);padding:9px;border-radius:16px;background:rgba(9,15,24,.82);color:#fff;backdrop-filter:blur(12px);box-shadow:0 12px 32px rgba(0,0,0,.24);border:1px solid rgba(255,255,255,.08)}
+#hud>div,#hud button{min-height:46px;display:flex;flex-direction:column;justify-content:center;gap:2px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:11px;padding:7px 11px;color:#d8e0ea;font-size:12px}
+#hud>div strong,#hud button{color:#fff;font-size:14px}
+#hud .brand{min-width:94px;background:rgba(77,118,168,.22)}
+#hud .brand strong{font-size:15px}
+#hud .brand span{font-size:10px;color:#9fb6d2;text-transform:uppercase;letter-spacing:.08em}
+#hud button{align-items:center;cursor:pointer;font-weight:800;padding:8px 13px}
+#hud button:hover{background:rgba(255,255,255,.11)}
+#damage.danger{color:#ff8f8f}
+#help{position:fixed;z-index:10;left:14px;bottom:14px;max-width:min(760px,calc(100% - 28px));padding:9px 12px;border-radius:11px;background:rgba(9,15,24,.78);color:#e7edf5;font-size:12px;line-height:1.35;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.08)}
+#loading{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:radial-gradient(circle at center,#162333,#081018 68%);color:#fff;transition:opacity .3s ease}
+#loading>div{display:flex;flex-direction:column;align-items:center;gap:8px;padding:20px 26px;border-radius:18px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04)}
+#loading strong{font-size:26px}
+#loading span{font-size:13px;color:#aab9c9}
+#loading.hidden{opacity:0;pointer-events:none}
+#mobileControls{display:none;position:fixed;z-index:15;left:0;right:0;bottom:16px;padding:0 16px;justify-content:space-between;align-items:flex-end;pointer-events:none}
+.dpad{display:grid;grid-template-columns:58px 58px 58px;grid-template-rows:58px 58px;gap:8px;pointer-events:auto}
+.dpad button,.pedals button{border:1px solid rgba(255,255,255,.28);background:rgba(9,15,24,.8);color:#fff;border-radius:16px;font-size:22px;font-weight:800;backdrop-filter:blur(8px);touch-action:none;min-width:54px;min-height:54px}
+.dpad button:nth-child(1){grid-column:2}
+.dpad button:nth-child(2){grid-column:1;grid-row:2}
+.dpad button:nth-child(3){grid-column:2;grid-row:2}
+.dpad button:nth-child(4){grid-column:3;grid-row:2}
+.pedals{display:flex;gap:9px;pointer-events:auto;align-items:flex-end}
+.pedals .brake{width:78px;height:78px;font-size:13px}
+.pedals .handbrake{width:64px;height:64px;font-size:11px}
+@media(max-width:900px){
+  #mobileControls{display:flex}
+  #help{bottom:172px;max-width:72%;font-size:11px}
+  #hud{font-size:12px;gap:5px;padding:7px;top:8px;left:8px;max-width:calc(100% - 16px)}
+  #hud>div,#hud button{min-height:41px;padding:5px 8px}
+  #hud>div strong,#hud button{font-size:12px}
+  #hud .brand{min-width:82px}
+  .dpad{grid-template-columns:54px 54px 54px;grid-template-rows:54px 54px}
+  .pedals .brake{width:72px;height:72px}
+  .pedals .handbrake{width:60px;height:60px}
+}
+@media(max-width:520px){
+  #hud>div:nth-of-type(5),#hud>div:nth-of-type(6){display:none}
+  #help{max-width:64%;bottom:166px}
+}

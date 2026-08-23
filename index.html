@@ -3,12 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Auto 3D - Proving Ground V3</title>
+  <title>Cotorrino Car</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div id="hud">
-    <div class="brand"><strong>Auto 3D</strong><span>Physics V3</span></div>
+    <div class="brand"><strong>Cotorrino Car</strong><span>Mapa de testeo</span></div>
     <div>Velocidad <strong><span id="speed">0</span> km/h</strong></div>
     <div>Marcha <strong id="gear">N</strong></div>
     <div>Daño <strong id="damage">0%</strong></div>
@@ -24,8 +24,17 @@
 
   <div id="loading">
     <div>
-      <strong>Auto 3D</strong>
-      <span>Cargando Physics V3 y campo de pruebas…</span>
+      <strong>Cotorrino Car</strong>
+      <span>Cargando el mapa de testeo y al cotorrino móvil…</span>
+    </div>
+  </div>
+
+  <div id="startScreen" class="hidden" aria-modal="true" role="dialog">
+    <div class="startCard">
+      <div class="startBadge">Cotorrino Car</div>
+      <h1>Bienvenido a Cotorrino Car</h1>
+      <p>Conduce al cotorrino por el mapa de pruebas: rampas, saltos, obstáculos y choques.</p>
+      <button id="startBtn" type="button">Empezar la cotorrinaconducción</button>
     </div>
   </div>
 

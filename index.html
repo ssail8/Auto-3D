@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Auto 3D - Test Map</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="hud">
+    <div><strong>Auto 3D</strong></div>
+    <div>Velocidad: <span id="speed">0</span> km/h</div>
+    <div>Aire: <span id="air">0.0</span> s</div>
+    <div>Boosts: <span id="boosts">0</span></div>
+    <button id="resetBtn">Reiniciar</button>
+  </div>
+
+  <div id="help">WASD / flechas = conducir · Espacio = freno · R = reiniciar</div>
+  <div id="loading">Cargando mundo 3D…</div>
+
+  <div id="mobileControls">
+    <div class="dpad">
+      <button data-key="ArrowUp">▲</button>
+      <button data-key="ArrowLeft">◀</button>
+      <button data-key="ArrowDown">▼</button>
+      <button data-key="ArrowRight">▶</button>
+    </div>
+    <button class="brake" data-key="Space">FRENO</button>
+  </div>
+
+  <canvas id="game"></canvas>
+  <script type="module" src="game.js"></script>
+</body>
+</html>

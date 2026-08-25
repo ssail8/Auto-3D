@@ -7,11 +7,14 @@ const canvas = document.querySelector('#game');
 const speedEl = document.querySelector('#speed');
 const gearEl = document.querySelector('#gear');
 const damageEl = document.querySelector('#damage');
+const nitroEl = document.querySelector('#nitro');
+const conditionEl = document.querySelector('#condition');
 const gforceEl = document.querySelector('#gforce');
 const airEl = document.querySelector('#air');
 const loading = document.querySelector('#loading');
 const startScreen = document.querySelector('#startScreen');
 const startBtn = document.querySelector('#startBtn');
+const wreckNotice = document.querySelector('#wreckNotice');
 const resetBtn = document.querySelector('#resetBtn');
 const cameraBtn = document.querySelector('#cameraBtn');
 
@@ -134,7 +137,6 @@ canvas.addEventListener('pointermove', (e) => {
   const dy = e.clientY - cameraDragY;
   cameraDragX = e.clientX;
   cameraDragY = e.clientY;
-
   const yawSensitivity = e.pointerType === 'touch' ? 0.0062 : 0.0048;
   const pitchSensitivity = e.pointerType === 'touch' ? 0.0050 : 0.0038;
   cameraOrbitYaw -= dx * yawSensitivity;
@@ -155,7 +157,7 @@ canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
 function inputState() {
   if (!started) {
-    return { throttle: false, reverse: false, left: false, right: false, brake: false, handbrake: false };
+    return { throttle: false, reverse: false, left: false, right: false, brake: false, handbrake: false, nitro: false };
   }
   return {
     throttle: keys.has('KeyW') || keys.has('ArrowUp'),
@@ -163,7 +165,8 @@ function inputState() {
     left: keys.has('KeyA') || keys.has('ArrowLeft'),
     right: keys.has('KeyD') || keys.has('ArrowRight'),
     brake: keys.has('Space'),
-    handbrake: keys.has('ShiftLeft') || keys.has('ShiftRight')
+    handbrake: keys.has('ShiftLeft') || keys.has('ShiftRight'),
+    nitro: keys.has('KeyN')
   };
 }
 
@@ -178,6 +181,7 @@ function resetSimulation() {
   airTime = 0;
   lastVelocity.copy(car.chassisBody.velocity);
   cameraInitialized = false;
+  wreckNotice.classList.add('hidden');
 }
 
 function startGame() {
@@ -223,7 +227,6 @@ function setOrbitCamera(flatForward, flatRight, distance, baseHeight, yawOffset 
     .multiplyScalar(-Math.cos(yaw))
     .addScaledVector(flatRight, Math.sin(yaw))
     .normalize();
-
   cameraDesired.copy(bodyP).addScaledVector(orbitDirection, horizontalDistance);
   cameraDesired.y += baseHeight + Math.sin(cameraOrbitPitch) * distance;
   cameraTargetDesired.copy(bodyP).addScaledVector(flatForward, 0.8);
@@ -234,7 +237,6 @@ function updateCamera(dt) {
   syncBodyBasis();
   const speed = car.chassisBody.velocity.length();
   const shake = car.consumeCameraShake(dt);
-
   const flatForward = forward3.clone();
   flatForward.y = 0;
   if (flatForward.lengthSq() < 0.001) flatForward.set(0, 0, -1);
@@ -289,7 +291,7 @@ function updateCamera(dt) {
   }
   camera.lookAt(cameraTargetSmooth);
 
-  const targetFov = !started ? 54 : (cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, 9));
+  const targetFov = !started ? 54 : (cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, car.nitroActive ? 15 : 9));
   camera.fov = lerp(camera.fov, targetFov, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
@@ -304,6 +306,14 @@ function gearLabel(signedKmh, input) {
   if (s < 124) return '4';
   if (s < 160) return '5';
   return '6';
+}
+
+function conditionLabel(damage, exploded) {
+  if (exploded) return 'DESTRUIDO';
+  if (damage < 20) return 'ÓPTIMO';
+  if (damage < 45) return 'GOLPEADO';
+  if (damage < 72) return 'DESGASTADO';
+  return 'CRÍTICO';
 }
 
 function updateHud(dt, driveData, input) {
@@ -322,11 +332,16 @@ function updateHud(dt, driveData, input) {
   lastVelocity.copy(v);
 
   speedEl.textContent = Math.round(driveData.speedKmh);
-  gearEl.textContent = gearLabel(driveData.signedSpeed * 3.6, input);
+  gearEl.textContent = driveData.exploded ? 'X' : gearLabel(driveData.signedSpeed * 3.6, input);
   damageEl.textContent = `${Math.round(car.damage.total)}%`;
+  nitroEl.textContent = Math.round(car.nitro);
+  conditionEl.textContent = conditionLabel(car.damage.total, car.exploded);
   gforceEl.textContent = `${feltG.toFixed(1)} g`;
   airEl.textContent = `${airTime.toFixed(1)} s`;
   damageEl.classList.toggle('danger', car.damage.total > 60);
+  conditionEl.classList.toggle('warn', car.damage.total >= 45 && !car.exploded);
+  conditionEl.classList.toggle('critical', car.damage.total >= 72 || car.exploded);
+  wreckNotice.classList.toggle('hidden', !car.exploded);
 }
 
 function resize() {
@@ -355,6 +370,7 @@ function frame(now) {
   const driveData = car.updateDrive(dt, input);
   world.step(fixedStep, dt, maxSubSteps);
   car.syncVisuals();
+  car.updateEffects(dt);
   map.syncDynamics();
   updateCamera(dt);
   updateHud(dt, driveData, input);

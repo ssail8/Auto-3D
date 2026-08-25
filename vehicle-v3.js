@@ -2,6 +2,7 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const lerp = (a, b, t) => a + (b - a) * t;
   const { chassisPhysics } = materials;
+  const centerPoint = new CANNON.Vec3(0, 0, 0);
 
   const chassisBody = new CANNON.Body({
     mass: 1280,
@@ -72,6 +73,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   const black = new THREE.MeshStandardMaterial({ color: 0x16181c, roughness: 0.84, metalness: 0.08 });
   const clawMat = new THREE.MeshStandardMaterial({ color: 0x9d5a26, roughness: 0.76, metalness: 0.04 });
 
+  const baseColors = {
+    green: green.color.clone(),
+    greenLight: greenLight.color.clone(),
+    greenDark: greenDark.color.clone(),
+    belly: bellyMat.color.clone(),
+    beak: beakMat.color.clone()
+  };
+  const charColor = new THREE.Color(0x1c2116);
+  const sootColor = new THREE.Color(0x352519);
+
   const bodyGeometry = new THREE.SphereGeometry(1.34, 42, 34);
   const body = new THREE.Mesh(bodyGeometry, green);
   body.scale.set(1.10, 0.97, 1.18);
@@ -93,7 +104,6 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   cheekL.position.set(-0.54, 0.74, -1.02);
   cheekL.castShadow = true;
   carVisual.add(cheekL);
-
   const cheekR = cheekL.clone();
   cheekR.position.x = 0.54;
   carVisual.add(cheekR);
@@ -175,19 +185,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   wingL.rotation.z = 0.48;
   wingL.castShadow = true;
   carVisual.add(wingL);
-
   const wingL2 = new THREE.Mesh(new THREE.SphereGeometry(0.28, 18, 14), greenDark);
   wingL2.scale.set(0.36, 0.16, 0.72);
   wingL2.position.set(-1.36, 0.68, 0.26);
   wingL2.rotation.z = 0.62;
   wingL2.castShadow = true;
   carVisual.add(wingL2);
-
   const wingR = wingL.clone();
   wingR.position.x = 1.27;
   wingR.rotation.z = -0.48;
   carVisual.add(wingR);
-
   const wingR2 = wingL2.clone();
   wingR2.position.x = 1.36;
   wingR2.rotation.z = -0.62;
@@ -198,14 +205,12 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   tailCenter.position.set(0, 0.88, 1.64);
   tailCenter.castShadow = true;
   carVisual.add(tailCenter);
-
   const tailL = new THREE.Mesh(new THREE.ConeGeometry(0.14, 0.54, 14), greenDark);
   tailL.rotation.x = Math.PI / 2 + 0.16;
   tailL.rotation.z = 0.24;
   tailL.position.set(-0.18, 0.82, 1.56);
   tailL.castShadow = true;
   carVisual.add(tailL);
-
   const tailR = tailL.clone();
   tailR.rotation.z = -0.24;
   tailR.position.x = 0.18;
@@ -216,19 +221,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   crest1.rotation.z = -0.28;
   crest1.castShadow = true;
   carVisual.add(crest1);
-
   const crest2 = new THREE.Mesh(new THREE.ConeGeometry(0.10, 0.66, 12), crestOrange);
   crest2.position.set(-0.04, 2.08, 0.03);
   crest2.rotation.z = -0.10;
   crest2.castShadow = true;
   carVisual.add(crest2);
-
   const crest3 = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.78, 12), crestRed);
   crest3.position.set(0.06, 2.17, 0.08);
   crest3.rotation.z = 0.08;
   crest3.castShadow = true;
   carVisual.add(crest3);
-
   const crest4 = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.52, 12), crestYellow);
   crest4.position.set(0.18, 1.98, 0.16);
   crest4.rotation.z = 0.28;
@@ -253,6 +255,37 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   }
   carVisual.add(footGroup);
 
+  const damageMarkMat = new THREE.MeshBasicMaterial({ color: 0x241b13, transparent: true, opacity: 0 });
+  const damageMarks = [];
+  for (const [x, y, z, sx, sy, sz] of [
+    [-0.68, 1.10, -1.05, 0.34, 0.08, 0.06],
+    [ 0.72, 0.82, -0.68, 0.28, 0.07, 0.05],
+    [-0.58, 0.48,  0.65, 0.32, 0.06, 0.05],
+    [ 0.46, 1.34,  0.34, 0.26, 0.06, 0.05]
+  ]) {
+    const mark = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), damageMarkMat.clone());
+    mark.position.set(x, y, z);
+    mark.rotation.z = x > 0 ? -0.25 : 0.25;
+    carVisual.add(mark);
+    damageMarks.push(mark);
+  }
+
+  const nitroMat = new THREE.MeshBasicMaterial({ color: 0x5ce8ff, transparent: true, opacity: 0.9 });
+  const nitroCoreMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.95 });
+  const nitroFlames = new THREE.Group();
+  for (const x of [-0.30, 0.30]) {
+    const flame = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.72, 14), nitroMat);
+    flame.rotation.x = Math.PI / 2;
+    flame.position.set(x, 0.40, 1.72);
+    nitroFlames.add(flame);
+    const core = new THREE.Mesh(new THREE.ConeGeometry(0.055, 0.46, 12), nitroCoreMat);
+    core.rotation.x = Math.PI / 2;
+    core.position.set(x, 0.40, 1.68);
+    nitroFlames.add(core);
+  }
+  nitroFlames.visible = false;
+  carVisual.add(nitroFlames);
+
   const wheelMeshes = [];
   const tireMat = new THREE.MeshStandardMaterial({ color: 0x151515, roughness: 0.92 });
   const rimMat = new THREE.MeshStandardMaterial({ color: 0xa3aab0, roughness: 0.30, metalness: 0.78 });
@@ -274,10 +307,47 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   let lastImpactMs = -1000;
   let cameraShake = 0;
   let steerState = 0;
+  let nitro = 100;
+  let nitroActive = false;
+  let exploded = false;
+  let smokeTimer = 0;
+  const fxParticles = [];
+  const fxGroup = new THREE.Group();
+  scene.add(fxGroup);
+
+  function removeFxParticle(p) {
+    fxGroup.remove(p.mesh);
+    p.mesh.geometry.dispose();
+    p.mesh.material.dispose();
+  }
+
+  function clearFx() {
+    while (fxParticles.length) removeFxParticle(fxParticles.pop());
+  }
+
+  function spawnFxParticle({ color, size, velocity, life, smoke = false }) {
+    const mat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: smoke ? 0.48 : 0.92, depthWrite: !smoke });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(size, 10, 8), mat);
+    mesh.position.set(chassisBody.position.x, chassisBody.position.y + 0.7, chassisBody.position.z);
+    fxGroup.add(mesh);
+    fxParticles.push({ mesh, velocity, life, maxLife: life, smoke });
+  }
 
   function recomputeDamageTotal() {
     const weighted = damage.front + damage.rear + damage.left + damage.right + damage.underbody * 0.7;
     damage.total = clamp((weighted / 3.0) * 100, 0, 100);
+  }
+
+  function applyWearVisuals() {
+    const wear = clamp(damage.total / 100, 0, 1);
+    green.color.copy(baseColors.green).lerp(charColor, wear * 0.72);
+    greenLight.color.copy(baseColors.greenLight).lerp(charColor, wear * 0.66);
+    greenDark.color.copy(baseColors.greenDark).lerp(charColor, wear * 0.56);
+    bellyMat.color.copy(baseColors.belly).lerp(sootColor, wear * 0.52);
+    beakMat.color.copy(baseColors.beak).lerp(sootColor, wear * 0.42);
+    for (let i = 0; i < damageMarks.length; i++) {
+      damageMarks[i].material.opacity = clamp(wear * 1.15 - i * 0.16, 0, 0.62);
+    }
   }
 
   function deformBody() {
@@ -291,20 +361,17 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       let x = bodyBase[k];
       let y = bodyBase[k + 1];
       let z = bodyBase[k + 2];
-
       const fw = clamp((-z - 0.05) / 1.18, 0, 1);
       const rw = clamp((z - 0.04) / 1.18, 0, 1);
       const lw = clamp((-x - 0.04) / 0.86, 0, 1);
       const sw = clamp((x - 0.04) / 0.86, 0, 1);
       const uw = clamp((-y - 0.10) / 1.0, 0, 1);
-
       z += f * 0.32 * fw;
       z -= r * 0.28 * rw;
       x += l * 0.14 * lw;
       x -= rr * 0.14 * sw;
       y -= u * 0.16 * uw;
       y += (f * fw + r * rw) * 0.026 * Math.sin((x + z) * 5.3);
-
       bodyPos.setXYZ(i, x, y, z);
     }
     bodyPos.needsUpdate = true;
@@ -331,6 +398,49 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     tailR.position.z = 1.56 - r * 0.12;
     tailCenter.rotation.x = Math.PI / 2 - r * 0.20;
     belly.position.y = 0.62 - u * 0.07;
+    applyWearVisuals();
+  }
+
+  function triggerExplosion() {
+    if (exploded) return;
+    exploded = true;
+    nitroActive = false;
+    nitroFlames.visible = false;
+    damage.front = Math.max(damage.front, 1);
+    damage.rear = Math.max(damage.rear, 0.85);
+    damage.left = Math.max(damage.left, 0.85);
+    damage.right = Math.max(damage.right, 0.85);
+    damage.underbody = Math.max(damage.underbody, 0.8);
+    damage.total = 100;
+    deformBody();
+    cameraShake = Math.max(cameraShake, 1.4);
+
+    for (let i = 0; i < 34; i++) {
+      const a = Math.random() * Math.PI * 2;
+      const up = 2.5 + Math.random() * 7;
+      const speed = 3 + Math.random() * 9;
+      spawnFxParticle({
+        color: i % 3 === 0 ? 0xffe36a : (i % 2 === 0 ? 0xff8a28 : 0xff3d12),
+        size: 0.13 + Math.random() * 0.24,
+        velocity: new THREE.Vector3(Math.cos(a) * speed, up, Math.sin(a) * speed),
+        life: 0.55 + Math.random() * 0.75
+      });
+    }
+    for (let i = 0; i < 10; i++) {
+      const a = Math.random() * Math.PI * 2;
+      spawnFxParticle({
+        color: 0x2b2c2c,
+        size: 0.28 + Math.random() * 0.30,
+        velocity: new THREE.Vector3(Math.cos(a) * (1 + Math.random() * 2), 2 + Math.random() * 3, Math.sin(a) * (1 + Math.random() * 2)),
+        life: 1.6 + Math.random() * 1.6,
+        smoke: true
+      });
+    }
+
+    const impulse = new CANNON.Vec3((Math.random() - 0.5) * 4200, 6500, (Math.random() - 0.5) * 4200);
+    chassisBody.applyImpulse(impulse, centerPoint);
+    chassisBody.angularVelocity.x += (Math.random() - 0.5) * 2.6;
+    chassisBody.angularVelocity.z += (Math.random() - 0.5) * 2.6;
   }
 
   function resetDamage() {
@@ -365,9 +475,16 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     tailL.rotation.set(Math.PI / 2 + 0.16, 0, 0.24);
     tailR.rotation.set(Math.PI / 2 + 0.16, 0, -0.24);
     belly.position.set(0, 0.62, -0.10);
+    green.color.copy(baseColors.green);
+    greenLight.color.copy(baseColors.greenLight);
+    greenDark.color.copy(baseColors.greenDark);
+    bellyMat.color.copy(baseColors.belly);
+    beakMat.color.copy(baseColors.beak);
+    for (const mark of damageMarks) mark.material.opacity = 0;
   }
 
   chassisBody.addEventListener('collide', (event) => {
+    if (exploded) return;
     const impact = Math.abs(event.contact.getImpactVelocityAlongNormal());
     if (impact < 3.0) return;
     const now = performance.now();
@@ -386,17 +503,21 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     invQ.vmult(relWorld, local);
 
     if (local.y < -0.16 && Math.abs(local.y) > Math.max(Math.abs(local.x) * 0.55, Math.abs(local.z) * 0.40)) {
-      damage.underbody = clamp(damage.underbody + severity * 0.35, 0, 1);
+      damage.underbody = clamp(damage.underbody + severity * 0.42, 0, 1);
     } else if (Math.abs(local.z) >= Math.abs(local.x)) {
-      if (local.z < 0) damage.front = clamp(damage.front + severity * 0.62, 0, 1);
-      else damage.rear = clamp(damage.rear + severity * 0.62, 0, 1);
+      if (local.z < 0) damage.front = clamp(damage.front + severity * 0.68, 0, 1);
+      else damage.rear = clamp(damage.rear + severity * 0.65, 0, 1);
     } else {
-      if (local.x < 0) damage.left = clamp(damage.left + severity * 0.58, 0, 1);
-      else damage.right = clamp(damage.right + severity * 0.58, 0, 1);
+      if (local.x < 0) damage.left = clamp(damage.left + severity * 0.62, 0, 1);
+      else damage.right = clamp(damage.right + severity * 0.62, 0, 1);
     }
 
     recomputeDamageTotal();
     deformBody();
+
+    if (damage.total >= 96 || (impact > 34 && damage.total > 52)) {
+      triggerExplosion();
+    }
   });
 
   const forwardLocal = new CANNON.Vec3(0, 0, -1);
@@ -420,14 +541,24 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   function updateDrive(dt, input) {
     const { speedKmh, signedSpeed, speed } = getTelemetry();
     const grounded = groundedWheelCount();
-    const steerInput = (input.left ? 1 : 0) - (input.right ? 1 : 0);
+    const wear = clamp(damage.total / 100, 0, 1);
 
+    if (exploded) {
+      nitroActive = false;
+      nitroFlames.visible = false;
+      for (let i = 0; i < 4; i++) vehicle.applyEngineForce(0, i);
+      return { speedKmh, signedSpeed, nitro, nitroActive: false, exploded: true, wear };
+    }
+
+    const steerInput = (input.left ? 1 : 0) - (input.right ? 1 : 0);
     let steerMax;
     if (speedKmh < 35) steerMax = lerp(0.46, 0.32, speedKmh / 35);
     else if (speedKmh < 80) steerMax = lerp(0.32, 0.18, (speedKmh - 35) / 45);
     else steerMax = lerp(0.18, 0.095, clamp((speedKmh - 80) / 100, 0, 1));
 
-    const steerTarget = steerInput * steerMax;
+    const steeringHealth = lerp(1, 0.70, wear);
+    const sidePull = (damage.left - damage.right) * 0.035 * clamp(speedKmh / 80, 0, 1);
+    const steerTarget = steerInput * steerMax * steeringHealth + sidePull;
     const steerResponse = 1 - Math.pow(0.00008, dt);
     steerState = lerp(steerState, steerTarget, steerResponse);
     vehicle.setSteeringValue(steerState, 0);
@@ -438,26 +569,39 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     else if (speedKmh < 90) baseGrip = lerp(3.4, 2.6, (speedKmh - 40) / 50);
     else baseGrip = lerp(2.6, 1.95, clamp((speedKmh - 90) / 90, 0, 1));
 
-    vehicle.wheelInfos[0].frictionSlip = baseGrip * 1.02;
-    vehicle.wheelInfos[1].frictionSlip = baseGrip * 1.02;
-    vehicle.wheelInfos[2].frictionSlip = input.handbrake ? 1.1 : baseGrip * 0.98;
-    vehicle.wheelInfos[3].frictionSlip = input.handbrake ? 1.1 : baseGrip * 0.98;
+    const gripWear = lerp(1, 0.72, wear);
+    vehicle.wheelInfos[0].frictionSlip = baseGrip * gripWear * (1 - damage.front * 0.08) * (1 - damage.left * 0.06);
+    vehicle.wheelInfos[1].frictionSlip = baseGrip * gripWear * (1 - damage.front * 0.08) * (1 - damage.right * 0.06);
+    vehicle.wheelInfos[2].frictionSlip = input.handbrake ? 1.0 : baseGrip * 0.98 * gripWear * (1 - damage.rear * 0.08) * (1 - damage.left * 0.06);
+    vehicle.wheelInfos[3].frictionSlip = input.handbrake ? 1.0 : baseGrip * 0.98 * gripWear * (1 - damage.rear * 0.08) * (1 - damage.right * 0.06);
+
+    const canNitro = input.nitro && input.throttle && nitro > 0.25 && signedSpeed > 0.5 && grounded > 0;
+    nitroActive = canNitro;
+    if (canNitro) nitro = Math.max(0, nitro - 30 * dt);
+    else nitro = Math.min(100, nitro + (input.throttle ? 3.5 : 7.0) * dt);
+    nitroFlames.visible = nitroActive;
+    if (nitroActive) {
+      const pulse = 0.88 + Math.sin(performance.now() * 0.035) * 0.12;
+      nitroFlames.scale.set(1, 1, pulse);
+    }
 
     let engineForce = 0;
     let autoBrake = 0;
+    const engineHealth = lerp(1, 0.34, Math.pow(wear, 1.15));
     if (input.throttle) {
       if (signedSpeed < -1.6) {
         autoBrake = 32000;
       } else {
-        const curve = lerp(1, 0.10, clamp(Math.max(0, speedKmh) / 195, 0, 1));
-        engineForce = 4200 * curve * (grounded > 0 ? 1 : 0.45);
+        const maxSpeed = nitroActive ? 242 : 195;
+        const curve = lerp(1, nitroActive ? 0.18 : 0.10, clamp(Math.max(0, speedKmh) / maxSpeed, 0, 1));
+        engineForce = 4200 * curve * engineHealth * (nitroActive ? 1.58 : 1) * (grounded > 0 ? 1 : 0.45);
       }
     } else if (input.reverse) {
       if (signedSpeed > 1.8) {
         autoBrake = 36000;
       } else {
         const reverseCurve = lerp(1, 0.22, clamp(Math.max(0, -signedSpeed) * 3.6 / 58, 0, 1));
-        engineForce = -2300 * reverseCurve * (grounded > 0 ? 1 : 0.45);
+        engineForce = -2300 * reverseCurve * engineHealth * (grounded > 0 ? 1 : 0.45);
       }
     }
 
@@ -466,14 +610,15 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     vehicle.applyEngineForce(engineForce, 2);
     vehicle.applyEngineForce(engineForce, 3);
 
-    const serviceBrake = input.brake ? 44000 : autoBrake;
+    const brakeHealth = lerp(1, 0.58, wear);
+    const serviceBrake = (input.brake ? 44000 : autoBrake) * brakeHealth;
     vehicle.setBrake(serviceBrake, 0);
     vehicle.setBrake(serviceBrake, 1);
     vehicle.setBrake(serviceBrake * 0.82, 2);
     vehicle.setBrake(serviceBrake * 0.82, 3);
     if (input.handbrake) {
-      vehicle.setBrake(65000, 2);
-      vehicle.setBrake(65000, 3);
+      vehicle.setBrake(65000 * brakeHealth, 2);
+      vehicle.setBrake(65000 * brakeHealth, 3);
     }
 
     if (speed > 0.3) {
@@ -481,28 +626,66 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
       const drag = chassisBody.velocity.clone();
       drag.normalize();
       drag.scale(-dragMag, drag);
-      chassisBody.applyForce(drag, chassisBody.position);
+      chassisBody.applyForce(drag, centerPoint);
+
+      if (nitroActive) {
+        chassisBody.quaternion.vmult(forwardLocal, forwardWorld);
+        const boost = forwardWorld.clone();
+        boost.scale(4800 * engineHealth, boost);
+        chassisBody.applyForce(boost, centerPoint);
+      }
 
       if (grounded > 0) {
         const downforceMag = Math.min(8600, speed * speed * 2.25);
-        chassisBody.applyForce(new CANNON.Vec3(0, -downforceMag, 0), chassisBody.position);
+        chassisBody.applyForce(new CANNON.Vec3(0, -downforceMag, 0), centerPoint);
         if (chassisBody.velocity.y > 0.2) {
-          chassisBody.applyForce(new CANNON.Vec3(0, -Math.min(4200, chassisBody.velocity.y * 2300), 0), chassisBody.position);
+          chassisBody.applyForce(new CANNON.Vec3(0, -Math.min(4200, chassisBody.velocity.y * 2300), 0), centerPoint);
         }
       }
 
       chassisBody.quaternion.vmult(rightLocal, rightWorld);
       const lateralSpeed = chassisBody.velocity.dot(rightWorld);
-      const yawDamp = clamp(Math.abs(lateralSpeed) * 180, 0, 3200);
       chassisBody.angularVelocity.y *= Math.max(0, 1 - dt * 0.55);
-      if (grounded > 1 && yawDamp > 0) {
+      if (grounded > 1 && Math.abs(lateralSpeed) > 0.05) {
         const lateralForce = rightWorld.clone();
-        lateralForce.scale(-lateralSpeed * 90, lateralForce);
-        chassisBody.applyForce(lateralForce, chassisBody.position);
+        lateralForce.scale(-lateralSpeed * 90 * gripWear, lateralForce);
+        chassisBody.applyForce(lateralForce, centerPoint);
       }
     }
 
-    return { speedKmh, signedSpeed };
+    return { speedKmh, signedSpeed, nitro, nitroActive, exploded: false, wear };
+  }
+
+  function updateEffects(dt) {
+    for (let i = fxParticles.length - 1; i >= 0; i--) {
+      const p = fxParticles[i];
+      p.life -= dt;
+      if (p.life <= 0) {
+        removeFxParticle(p);
+        fxParticles.splice(i, 1);
+        continue;
+      }
+      p.velocity.y -= (p.smoke ? 0.15 : 5.0) * dt;
+      p.mesh.position.addScaledVector(p.velocity, dt);
+      const t = p.life / p.maxLife;
+      p.mesh.material.opacity = (p.smoke ? 0.42 : 0.92) * clamp(t, 0, 1);
+      const grow = p.smoke ? 1 + dt * 0.9 : 1 + dt * 0.5;
+      p.mesh.scale.multiplyScalar(grow);
+    }
+
+    if (exploded) {
+      smokeTimer -= dt;
+      if (smokeTimer <= 0 && fxParticles.length < 28) {
+        smokeTimer = 0.13 + Math.random() * 0.15;
+        spawnFxParticle({
+          color: Math.random() > 0.5 ? 0x262829 : 0x3c3d3d,
+          size: 0.22 + Math.random() * 0.18,
+          velocity: new THREE.Vector3((Math.random() - 0.5) * 0.7, 1.2 + Math.random() * 1.5, (Math.random() - 0.5) * 0.7),
+          life: 1.8 + Math.random() * 1.2,
+          smoke: true
+        });
+      }
+    }
   }
 
   function syncVisuals() {
@@ -517,6 +700,12 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
   }
 
   function reset() {
+    clearFx();
+    exploded = false;
+    nitro = 100;
+    nitroActive = false;
+    smokeTimer = 0;
+    nitroFlames.visible = false;
     chassisBody.position.set(spawn.x, spawn.y, spawn.z);
     chassisBody.quaternion.setFromEuler(0, 0, 0);
     chassisBody.velocity.setZero();
@@ -553,10 +742,15 @@ export function createVehicle({ THREE, CANNON, scene, world, materials, spawn })
     vehicle,
     damage,
     updateDrive,
+    updateEffects,
     syncVisuals,
     reset,
     getTelemetry,
     groundedWheelCount,
-    consumeCameraShake
+    consumeCameraShake,
+    triggerExplosion,
+    get nitro() { return nitro; },
+    get nitroActive() { return nitroActive; },
+    get exploded() { return exploded; }
   };
 }

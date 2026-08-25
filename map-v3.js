@@ -50,7 +50,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
-
     const body = new CANNON.Body({ mass: 0, material: concretePhysics });
     body.addShape(new CANNON.Sphere(radius));
     body.position.set(x, centerY, z);
@@ -73,7 +72,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
-
     const body = new CANNON.Body({
       mass,
       material: concretePhysics,
@@ -102,7 +100,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     cone.position.y = 0.50;
     group.add(cone);
     scene.add(group);
-
     const body = new CANNON.Body({ mass: 1.6, material: concretePhysics });
     body.addShape(new CANNON.Box(new CANNON.Vec3(0.34, 0.45, 0.34)));
     body.position.set(x, 0.46, z);
@@ -123,7 +120,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     scene.add(mesh);
-
     const body = new CANNON.Body({ mass: 24, material: concretePhysics });
     const cylinder = new CANNON.Cylinder(radius, radius, height, 18);
     const shapeQ = new CANNON.Quaternion();
@@ -152,16 +148,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
     ctx.clearRect(0, 0, width, height);
     if (options.background !== false) {
       ctx.fillStyle = options.background || 'rgba(8,14,24,.72)';
-      const pad = 14;
-      const radius = 32;
-      ctx.beginPath();
-      ctx.moveTo(pad + radius, pad);
-      ctx.arcTo(width - pad, pad, width - pad, height - pad, radius);
-      ctx.arcTo(width - pad, height - pad, pad, height - pad, radius);
-      ctx.arcTo(pad, height - pad, pad, pad, radius);
-      ctx.arcTo(pad, pad, width - pad, pad, radius);
-      ctx.closePath();
-      ctx.fill();
+      ctx.fillRect(14, 14, width - 28, height - 28);
     }
     if (options.border !== false) {
       ctx.strokeStyle = options.border || 'rgba(255,255,255,.92)';
@@ -269,23 +256,19 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
       const a = (i / 96) * Math.PI * 2;
       pts.push(new THREE.Vector3(Math.cos(a) * r, 0.06, Math.sin(a) * r));
     }
-    const line = new THREE.Line(
+    scene.add(new THREE.Line(
       new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({ color: r === 48 ? 0xffffff : 0xd9e3f0, transparent: true, opacity: r === 48 ? 0.34 : 0.16 })
-    );
-    scene.add(line);
+    ));
   }
 
-  for (let z = 128; z > -136; z -= 10) {
-    addLine(0, z, 0.18, 4.8, 0xffffff);
-  }
+  for (let z = 128; z > -136; z -= 10) addLine(0, z, 0.18, 4.8, 0xffffff);
   for (let z = 128; z > -136; z -= 12) {
     addLine(-8.7, z, 0.1, 4.6, 0xcfd8e3);
     addLine(8.7, z, 0.1, 4.6, 0xcfd8e3);
   }
 
   addLabel('RECTA PRINCIPAL', 0, 7, 98, 5.2);
-
   const mainUp = addRamp({ x: 0, z: 34, width: 12, length: 24, angle: THREE.MathUtils.degToRad(16), color: 0x6a7380 });
   addPlatform({ x: 0, z: 13, topY: mainUp.highSurfaceY, w: 12, l: 15, h: 0.78, color: 0x5f6772 });
   addRamp({ x: 0, z: -12, width: 12, length: 24, angle: THREE.MathUtils.degToRad(-14), color: 0x6a7380 });
@@ -298,9 +281,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   addLabel('RAMPAS LATERALES', 0, 6.5, 3, 5);
 
   addLabel('SUSPENSIÓN', -54, 6.4, 74, 4.8);
-  for (let i = 0; i < 12; i++) {
-    addBump(-58 + (i % 2) * 7.5, 58 - i * 8.0, 1.25, 0.34 + (i % 3) * 0.09);
-  }
+  for (let i = 0; i < 12; i++) addBump(-58 + (i % 2) * 7.5, 58 - i * 8.0, 1.25, 0.34 + (i % 3) * 0.09);
   for (let i = 0; i < 9; i++) addSpeedBump(-47, -8 - i * 3.1, 10.5, 0.11 + (i % 2) * 0.08, 0.70);
   addLine(-52, 24, 12, 112, 0xd9dee3);
 
@@ -316,11 +297,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   }
 
   addLabel('SLALOM', -96, 6.5, -8, 4.6);
-  for (let i = 0; i < 16; i++) {
-    const x = -96 + (i % 2 === 0 ? -5.5 : 5.5);
-    const z = 28 - i * 7;
-    addCone(x, z);
-  }
+  for (let i = 0; i < 16; i++) addCone(-96 + (i % 2 === 0 ? -5.5 : 5.5), 28 - i * 7);
   addLine(-96, -26, 14, 118, 0xf8fafc);
 
   addLabel('PRUEBA DE CHOQUE', 0, 6.2, -112, 5.3);
@@ -338,9 +315,7 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
 
   addLabel('BARRILES', 82, 6.1, -56, 4.4);
   for (let row = 0; row < 3; row++) {
-    for (let col = 0; col < 4; col++) {
-      addBarrel(72 + col * 3.1, -48 - row * 3.1);
-    }
+    for (let col = 0; col < 4; col++) addBarrel(72 + col * 3.1, -48 - row * 3.1);
   }
 
   addLabel('DROP TEST', -38, 7.8, -58, 4.8);
@@ -351,8 +326,6 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   addLabel('WALL RIDE', 94, 8.2, 4, 4.8);
   addStaticBox({
     x: 112, y: 4.8, z: 4, w: 2.2, h: 9.6, l: 26,
-    pitch: 0,
-    yaw: 0,
     roll: THREE.MathUtils.degToRad(24),
     material: new THREE.MeshStandardMaterial({ color: 0x737d86, roughness: 0.88 })
   });
@@ -361,6 +334,51 @@ export function buildProvingGround({ THREE, CANNON, scene, world, materials }) {
   addLabel('MINI JUMPS', -92, 6.3, 92, 4.6);
   for (let i = 0; i < 4; i++) {
     addRamp({ x: -92, z: 78 - i * 12, width: 10, length: 8.6, angle: THREE.MathUtils.degToRad(12 + i * 2), thickness: 0.42, color: 0x737d86 });
+  }
+
+  // Mega jump: designed for a full-nitro run from the north edge toward -Z.
+  addLabel('MEGA SALTO + NITRO', 112, 11.5, 124, 5.3);
+  const mega = addRamp({ x: 112, z: 112, width: 14, length: 30, angle: THREE.MathUtils.degToRad(27), color: 0x536779 });
+  addPlatform({ x: 112, z: 91, topY: mega.highSurfaceY, w: 14, l: 11, h: 0.85, color: 0x4b5967 });
+  addRamp({ x: 112, z: 64, width: 16, length: 30, angle: THREE.MathUtils.degToRad(-22), color: 0x627383 });
+  addLine(112, 105, 13.5, 48, 0x7ee7ff);
+
+  // Double jump chain on the west side.
+  addLabel('DOBLE SALTO', -118, 8.4, 38, 4.8);
+  addRamp({ x: -118, z: 28, width: 11, length: 15, angle: THREE.MathUtils.degToRad(19), color: 0x765f8f });
+  addRamp({ x: -118, z: -2, width: 11, length: 15, angle: THREE.MathUtils.degToRad(21), color: 0x765f8f });
+  addRamp({ x: -118, z: -31, width: 13, length: 20, angle: THREE.MathUtils.degToRad(-16), color: 0x806a97 });
+  addLine(-118, 2, 10.5, 78, 0xe0c7ff);
+
+  // Jump alley: several progressively steeper kickers for suspension and landing tests.
+  addLabel('JUMP ALLEY', -70, 7.2, -104, 4.7);
+  for (let i = 0; i < 5; i++) {
+    addRamp({
+      x: -70 + (i % 2 === 0 ? -3.5 : 3.5),
+      z: -82 - i * 12,
+      width: 8.5,
+      length: 9.2,
+      angle: THREE.MathUtils.degToRad(13 + i * 3),
+      yaw: THREE.MathUtils.degToRad(i % 2 === 0 ? -4 : 4),
+      thickness: 0.46,
+      color: 0x6b7480
+    });
+  }
+
+  // Nitro gap course: narrow launch ramps with long clear sections between them.
+  addLabel('NITRO GAPS', 102, 7.5, -94, 4.8);
+  addRamp({ x: 103, z: -78, width: 9, length: 13, angle: THREE.MathUtils.degToRad(20), color: 0x4e7182 });
+  addRamp({ x: 103, z: -106, width: 10, length: 15, angle: THREE.MathUtils.degToRad(23), color: 0x4e7182 });
+  addRamp({ x: 103, z: -134, width: 12, length: 18, angle: THREE.MathUtils.degToRad(-18), color: 0x5f8291 });
+  addLine(103, -104, 8.6, 64, 0x79e8ff);
+
+  // Small side kickers scattered near the center for spontaneous jumps.
+  const kickers = [
+    [-22, 74, 14, -12], [22, 76, 15, 12], [-24, -6, 16, 8], [24, -25, 17, -8],
+    [-62, 105, 18, 5], [66, 102, 20, -6], [-64, -120, 21, 0], [62, -118, 22, 0]
+  ];
+  for (const [x, z, deg, yawDeg] of kickers) {
+    addRamp({ x, z, width: 7.5, length: 10.5, angle: THREE.MathUtils.degToRad(deg), yaw: THREE.MathUtils.degToRad(yawDeg), thickness: 0.42, color: 0x6d7782 });
   }
 
   for (let i = 0; i < 32; i++) {

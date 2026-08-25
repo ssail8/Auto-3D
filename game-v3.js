@@ -88,10 +88,28 @@ let cameraOrbitPitch = 0.18;
 let cameraDragId = null;
 let cameraDragX = 0;
 let cameraDragY = 0;
+let nitroFlashUntil = 0;
 
 function setKey(code, down) {
   if (down) keys.add(code);
   else keys.delete(code);
+}
+
+function applyNitroBurst() {
+  if (!started || car.exploded) return;
+
+  // Instant arcade-style burst: +60 km/h (= 16.666... m/s) along the Cotorrino's
+  // current forward direction. This adds to the existing velocity, so pressing
+  // nitro at 80 km/h produces roughly 140 km/h immediately.
+  const forward = new CANNON.Vec3(0, 0, -1);
+  const forwardWorld = new CANNON.Vec3();
+  car.chassisBody.quaternion.vmult(forward, forwardWorld);
+  const boostMps = 60 / 3.6;
+  car.chassisBody.velocity.x += forwardWorld.x * boostMps;
+  car.chassisBody.velocity.y += forwardWorld.y * boostMps;
+  car.chassisBody.velocity.z += forwardWorld.z * boostMps;
+  car.chassisBody.wakeUp();
+  nitroFlashUntil = performance.now() + 450;
 }
 
 window.addEventListener('keydown', (e) => {
@@ -99,6 +117,7 @@ window.addEventListener('keydown', (e) => {
   if (!started && e.code !== 'Enter' && e.code !== 'Space') return;
   if (e.code === 'KeyR' && !e.repeat) resetSimulation();
   if (e.code === 'KeyC' && !e.repeat) nextCamera();
+  if (e.code === 'KeyN' && !e.repeat) applyNitroBurst();
   setKey(e.code, true);
 });
 window.addEventListener('keyup', (e) => setKey(e.code, false));
@@ -112,6 +131,7 @@ for (const button of document.querySelectorAll('[data-key]')) {
   const down = (e) => {
     if (!started) return;
     e.preventDefault();
+    if (code === 'KeyN') applyNitroBurst();
     setKey(code, true);
     button.setPointerCapture?.(e.pointerId);
   };
@@ -179,6 +199,7 @@ function resetSimulation() {
   keys.clear();
   car.reset();
   airTime = 0;
+  nitroFlashUntil = 0;
   lastVelocity.copy(car.chassisBody.velocity);
   cameraInitialized = false;
   wreckNotice.classList.add('hidden');
@@ -291,7 +312,8 @@ function updateCamera(dt) {
   }
   camera.lookAt(cameraTargetSmooth);
 
-  const targetFov = !started ? 54 : (cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, car.nitroActive ? 15 : 9));
+  const burstActive = performance.now() < nitroFlashUntil;
+  const targetFov = !started ? 54 : (cameraMode === 1 ? 66 : 60 + clamp(speed * 0.16, 0, (car.nitroActive || burstActive) ? 15 : 9));
   camera.fov = lerp(camera.fov, targetFov, 1 - Math.pow(0.02, dt));
   camera.updateProjectionMatrix();
 }
